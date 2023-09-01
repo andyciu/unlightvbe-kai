@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34009.444
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unlightvbe-kai-Script", "unlightvbe-kai-Script\unlightvbe-kai-Script.csproj", "{5C1E0B26-6485-4FE2-81F2-7634BBAF55E8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unlightvbe-kai-Console", "unlightvbe-kai-Console\unlightvbe-kai-Console.csproj", "{DB2B9451-4173-4DE2-A805-2CF88E3E8E1E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "unlightvbe-kai-Core", "unlightvbe-kai-Core\unlightvbe-kai-Core.csproj", "{10717A88-F2E6-40BF-BF26-3A07BB7DC468}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5C1E0B26-6485-4FE2-81F2-7634BBAF55E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C1E0B26-6485-4FE2-81F2-7634BBAF55E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C1E0B26-6485-4FE2-81F2-7634BBAF55E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C1E0B26-6485-4FE2-81F2-7634BBAF55E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB2B9451-4173-4DE2-A805-2CF88E3E8E1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB2B9451-4173-4DE2-A805-2CF88E3E8E1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB2B9451-4173-4DE2-A805-2CF88E3E8E1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB2B9451-4173-4DE2-A805-2CF88E3E8E1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10717A88-F2E6-40BF-BF26-3A07BB7DC468}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10717A88-F2E6-40BF-BF26-3A07BB7DC468}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10717A88-F2E6-40BF-BF26-3A07BB7DC468}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10717A88-F2E6-40BF-BF26-3A07BB7DC468}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D2D0BB2A-EDA5-4202-9F60-19472E2A2596}
+	EndGlobalSection
+EndGlobal
