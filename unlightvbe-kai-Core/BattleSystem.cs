@@ -5,27 +5,73 @@ using unlightvbe_kai_core.Models;
 
 namespace unlightvbe_kai_core
 {
-    public class BattleSystem
+    public partial class BattleSystem
     {
-        protected PlayerData Player1 { get; set; }
-        protected PlayerData Player2 { get; set; }
+        /// <summary>
+        /// 玩家資料集
+        /// </summary>
+        protected PlayerData[] PlayerDatas { get; set; } = new PlayerData[2];
+        /// <summary>
+        /// 是否已結束對戰
+        /// </summary>
         protected bool IsFinish { get; set; }
+        /// <summary>
+        /// 對雙方玩家使用者介面資訊配置器
+        /// </summary>
         protected MultiUserInterfaceAdapter MultiUIAdapter { get; set; }
+        /// <summary>
+        /// 卡牌集合
+        /// </summary>
         protected List<Dictionary<int, Card>> CardDecks { get; set; }
+        /// <summary>
+        /// 卡牌集合索引
+        /// </summary>
         protected Dictionary<int, CardDeckType> CardDeckIndex { get; set; }
-        protected int TurnNum { get; set; }
+        /// <summary>
+        /// 目前回合數
+        /// </summary>
+        private int TurnNum;
+        /// <summary>
+        /// 對戰最大回合數
+        /// </summary>
+        public int TurnMaxNum { get; set; } = 18;
+        /// <summary>
+        /// 對戰模式
+        /// </summary>
+        private PlayerVersusModeType PlayerVersusMode;
+
 
         public BattleSystem(Player player1, Player player2, int deckIndex_P1, int deckIndex_P2)
         {
-            Player1 = new(player1, deckIndex_P1);
-            Player2 = new(player2, deckIndex_P2);
+            try
+            {
+                PlayerDatas[(int)UserPlayerType.Player1] = new(player1, deckIndex_P1);
+                PlayerDatas[(int)UserPlayerType.Player2] = new(player2, deckIndex_P2);
+                if (player1.Decks[deckIndex_P1].Deck_Subs.Count == 1 && player2.Decks[deckIndex_P2].Deck_Subs.Count == 1)
+                {
+                    PlayerVersusMode = PlayerVersusModeType.OneOnOne;
+                }
+                else if (player1.Decks[deckIndex_P1].Deck_Subs.Count == 3 && player2.Decks[deckIndex_P2].Deck_Subs.Count == 3)
+                {
+                    PlayerVersusMode = PlayerVersusModeType.ThreeOnThree;
+                }
+                else
+                {
+                    throw new ArgumentException("PlayerVersusMode No Match.");
+                }
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
         }
 
         public void SetUserInterface(IUserInterfaceAsync userInterface_P1, IUserInterfaceAsync userInterface_P2)
         {
-            Player1.UserInterface = userInterface_P1;
-            Player2.UserInterface = userInterface_P2;
-            MultiUIAdapter = new(userInterface_P1, userInterface_P2);
+            PlayerDatas[(int)UserPlayerType.Player1].UserInterface = userInterface_P1;
+            PlayerDatas[(int)UserPlayerType.Player2].UserInterface = userInterface_P2;
+            MultiUIAdapter = new(userInterface_P1, userInterface_P2, new UserActionProxy(this));
         }
 
         public void Start()
@@ -33,16 +79,7 @@ namespace unlightvbe_kai_core
             InitialData();
             StartScreenPhase();
             DrawPhase();
-
-            while (true)
-            {
-                var tmpaction = Player1.UserInterface.ReadAction();
-                Player1.UserInterface.ShowBattleMessage(tmpaction.Type.ToString() + " " + tmpaction.Message);
-                if (tmpaction.Type == ReadActionType.OKButtonClick)
-                {
-                    break;
-                }
-            }
+            MovePhase();
         }
 
         public bool CheckisFinish()
@@ -68,8 +105,12 @@ namespace unlightvbe_kai_core
             CardDecks[(int)CardDeckType.Event_P1] = ShuffleDeck(CardDecks[(int)CardDeckType.Event_P1]);
             CardDecks[(int)CardDeckType.Event_P2] = ShuffleDeck(CardDecks[(int)CardDeckType.Event_P2]);
 
-            Player1.HoldMaxCount = 5;
-            Player2.HoldMaxCount = 5;
+            EvnetCardComplement();
+
+            foreach (var player in PlayerDatas)
+            {
+                player.HoldMaxCount = 5;
+            }
 
         }
 
@@ -80,10 +121,10 @@ namespace unlightvbe_kai_core
         {
             MultiUIAdapter.ShowStartScreen(new()
             {
-                Player1_Id = Player1.Player.PlayerId,
-                Player2_Id = Player2.Player.PlayerId,
-                Player1_DeckIndex = Player1.DeckIndex,
-                Player2_DeckIndex = Player2.DeckIndex,
+                Player1_Id = PlayerDatas[(int)UserPlayerType.Player1].Player.PlayerId,
+                Player2_Id = PlayerDatas[(int)UserPlayerType.Player2].Player.PlayerId,
+                Player1_DeckIndex = PlayerDatas[(int)UserPlayerType.Player1].DeckIndex,
+                Player2_DeckIndex = PlayerDatas[(int)UserPlayerType.Player2].DeckIndex,
             });
         }
 
@@ -92,10 +133,12 @@ namespace unlightvbe_kai_core
         /// </summary>
         private void DrawPhase()
         {
-            int waitToDeal_P1 = Player1.HoldMaxCount - CardDecks[(int)CardDeckType.Hold_P1].Count;
-            int waitToDeal_P2 = Player2.HoldMaxCount - CardDecks[(int)CardDeckType.Hold_P2].Count;
+            int waitToDeal_P1 = PlayerDatas[(int)UserPlayerType.Player1].HoldMaxCount - CardDecks[(int)CardDeckType.Hold_P1].Count;
+            int waitToDeal_P2 = PlayerDatas[(int)UserPlayerType.Player2].HoldMaxCount - CardDecks[(int)CardDeckType.Hold_P2].Count;
             List<Card> dealCards_p1 = new List<Card>();
             List<Card> dealCards_p2 = new List<Card>();
+            ActionCardOwner dealside = ActionCardOwner.Player1; //目前發牌方
+            EventCard[] eventCards = new EventCard[2];
 
             //回合數增加
             TurnNum += 1;
@@ -115,11 +158,10 @@ namespace unlightvbe_kai_core
             //同步牌堆數量
             MultiUIAdapter.UpdateData(new()
             {
-                Type = UpdateDataType.DeckNumber,
+                Type = UpdateDataType.DeckCount,
                 Value = CardDecks[(int)CardDeckType.Deck].Count
             });
 
-            var dealside = ActionCardOwner.Player1; //目前發牌方
             //發牌(行動卡)
             while (waitToDeal_P1 > 0 || waitToDeal_P2 > 0)
             {
@@ -157,121 +199,34 @@ namespace unlightvbe_kai_core
             MultiUIAdapter.DrawActionCard(dealCards_p1, dealCards_p2);
 
             //發牌(事件卡)
-
-        }
-
-        /// <summary>
-        /// 牌堆集合洗牌
-        /// </summary>
-        /// <param name="origdeck">原始集合</param>
-        /// <returns></returns>
-        private Dictionary<int, Card> ShuffleDeck(Dictionary<int, Card> origdeck)
-        {
-            var tmpdeck = new Dictionary<int, Card>(origdeck);
-            var newdeck = new Dictionary<int, Card>();
-            Random rnd = new(DateTime.Now.Millisecond);
-
-            while (tmpdeck.Count > 0)
+            for (int n = 0; n < 2; n++)
             {
-                var tmpnum = rnd.Next(tmpdeck.Count);
-                newdeck.Add(tmpdeck.ElementAt(tmpnum).Key, tmpdeck.ElementAt(tmpnum).Value);
-                tmpdeck.Remove(tmpdeck.ElementAt(tmpnum).Key);
+                if (n == 0) dealside = ActionCardOwner.Player1;
+                else dealside = ActionCardOwner.Player2;
+
+                var tmpcard = CardDecks[(int)GetCardDeckType(dealside, ActionCardLocation.Deck)].ElementAt(0).Value;
+                tmpcard.Location = ActionCardLocation.Hold;
+                tmpcard.Owner = dealside;
+
+                eventCards[n] = new EventCard(tmpcard);
+                DeckCardMove(tmpcard, GetCardDeckType(dealside, ActionCardLocation.Deck), GetCardDeckType(dealside, ActionCardLocation.Hold));
             }
 
-            return newdeck;
+            MultiUIAdapter.DrawEventCard(eventCards[0], eventCards[1]);
         }
 
         /// <summary>
-        /// 墓地牌洗牌前重新倒回牌堆
+        /// 移動階段
         /// </summary>
-        private void GraveyardDeckReUse()
+        private void MovePhase()
         {
-            foreach (var card in CardDecks[(int)CardDeckType.Graveyard])
+            foreach (var player in PlayerDatas)
             {
-                card.Value.Location = ActionCardLocation.Deck;
-                card.Value.Owner = ActionCardOwner.System;
-
-                DeckCardMove(card.Value, CardDeckType.Graveyard, CardDeckType.Deck);
+                player.MoveBarSelect = MoveBarSelectType.None;
+                player.IsOKButtonSelect = false;
             }
-        }
 
-        /// <summary>
-        /// 卡牌於牌堆集合間移動
-        /// </summary>
-        /// <param name="card">卡牌</param>
-        /// <param name="origType">目前所在集合</param>
-        /// <param name="destType">目標集合</param>
-        private void DeckCardMove(Card card, CardDeckType origType, CardDeckType destType)
-        {
-            CardDecks[(int)destType].Add(card.Number, card);
-            CardDecks[(int)origType].Remove(card.Number);
-
-            CardDeckIndex[card.Number] = destType;
-        }
-
-        /// <summary>
-        /// 取得卡牌編號
-        /// </summary>
-        /// <param name="cardDeckType">目標集合</param>
-        /// <returns></returns>
-        private int GetCardIndex(CardDeckType cardDeckType)
-        {
-            int newNum = CardDeckIndex.Count + 1;
-            CardDeckIndex.Add(newNum, cardDeckType);
-
-            return newNum;
-        }
-
-        /// <summary>
-        /// (初始階段)匯入場地行動卡資訊
-        /// </summary>
-        private void ImportActionCardToDeck()
-        {
-            var cardlist = SampleData.GetCardList_Deck();
-
-            foreach (var card in cardlist)
-            {
-                int tmpnum = GetCardIndex(CardDeckType.Deck);
-                card.Number = tmpnum;
-                card.Owner = ActionCardOwner.System;
-                card.Location = ActionCardLocation.Deck;
-
-                CardDecks[(int)CardDeckType.Deck].Add(tmpnum, card);
-            }
-        }
-
-        /// <summary>
-        /// (初始階段)匯入玩家事件卡資訊
-        /// </summary>
-        private void ImportEventCardToDeck()
-        {
-            CardDeckType cardDeckType;
-            PlayerData[] playerDataList = new PlayerData[2] { Player1, Player2 };
-
-            foreach (var player in playerDataList)
-            {
-                if (player.Equals(Player1))
-                {
-                    cardDeckType = CardDeckType.Event_P1;
-                }
-                else
-                {
-                    cardDeckType = CardDeckType.Event_P2;
-                }
-
-                foreach (var sub in player.Player.Decks[player.DeckIndex].Deck_Subs)
-                {
-                    foreach (var card in sub.eventCards)
-                    {
-                        int tmpnum = GetCardIndex(cardDeckType);
-                        card.Number = tmpnum;
-                        card.Owner = ActionCardOwner.System;
-                        card.Location = ActionCardLocation.Deck;
-
-                        CardDecks[(int)cardDeckType].Add(tmpnum, card);
-                    }
-                }
-            }
+            MultiUIAdapter.MovePhaseReadAction();
         }
     }
 }

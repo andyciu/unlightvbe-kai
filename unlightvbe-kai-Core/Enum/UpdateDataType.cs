@@ -8,7 +8,12 @@ namespace unlightvbe_kai_core.Enum
 {
     public enum UpdateDataType
     {
+        None = 0,
         TurnNumber,
-        DeckNumber
+        DeckCount,
+        OpponentHoldingCardCount,
+        OpponentPlayingCardCount,
+        SelfDiceTotalNumber,
+        OpponentDiceTotalNumber
     }
 }

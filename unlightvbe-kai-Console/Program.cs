@@ -1,6 +1,5 @@
 ﻿using unlightvbe_kai_core;
 using unlightvbe_kai_core.Models;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace unlightvbe_kai_console
 {
@@ -74,8 +73,8 @@ namespace unlightvbe_kai_console
                 Decks = new List<Deck> { deck2 }
             };
 
-            BattleSystem battleSystem = new BattleSystem(player1, player2, 0, 0);
-            battleSystem.SetUserInterface(new ConsoleInterface("1"), new ConsoleInterface("2"));
+            BattleSystem battleSystem = new(player1, player2, 0, 0);
+            battleSystem.SetUserInterface(new ConsoleInterface("1"), new AIWithConsoleInterface("2"));
 
             Task.Run(() =>
             {

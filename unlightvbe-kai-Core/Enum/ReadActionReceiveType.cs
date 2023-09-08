@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 
 namespace unlightvbe_kai_core.Enum
 {
-    public enum ReadActionType
+    public enum ReadActionReceiveType
     {
-        CardClick,
-        CardReverse,
+        None = 0,
+        HoldingCard,
+        PlayingCard,
+        HoldingCardReverse,
+        PlayingCardReverse,
         BarMoveLeft,
         BarMoveRight,
         BarMoveStay,
