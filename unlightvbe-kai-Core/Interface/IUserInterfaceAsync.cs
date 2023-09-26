@@ -14,6 +14,11 @@ namespace unlightvbe_kai_core.Interface
         public Task DrawActionCardAsync(DrawCardModel data);
         public Task DrawEventCardAsync(DrawCardModel data);
         public Task UpdateDataAsync(UpdateDataModel data);
+        public Task UpdateDataMultiAsync(UpdateDataMultiModel data);
+        public Task UpdateDataRelativeAsync(UpdateDataRelativeModel data);
         public Task ReadActionReceiveAsync(ReadActionReceiveModel data);
+        public Task PhaseStartAsync(PhaseStartModel data);
+        public Task OpenOppenentPlayingCardAsync(OpenOppenentPlayingCardModel data);
+        public Task ShowJudgmentAsync(ShowJudgmentModel data);
     }
 }

@@ -16,7 +16,7 @@ namespace unlightvbe_kai_core.Models.IUserInterface
         public int UpperNum { get; set; }
         public ActionCardType LowerType { get; set; }
         public int LowerNum { get; set; }
-        public ActionCardOwner Owner { get; set; }
+        public ActionCardRelativeOwner Owner { get; set; }
         public ActionCardLocation Location { get; set; }
     }
 }

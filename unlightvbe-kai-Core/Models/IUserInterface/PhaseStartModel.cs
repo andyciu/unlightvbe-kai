@@ -7,9 +7,8 @@ using unlightvbe_kai_core.Enum;
 
 namespace unlightvbe_kai_core.Models.IUserInterface
 {
-    public class ReadActionReceiveModel
+    public class PhaseStartModel
     {
-        public ReadActionReceiveType Type { get; set; }
-        public bool IsSuccess { get; set; }
+        public PhaseStartType Type { get; set; }
     }
 }

@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using unlightvbe_kai_core.Enum;
 
 namespace unlightvbe_kai_core.Models.IUserInterface
 {
-    public class ReadActionReceiveModel
+    public class OpenOppenentPlayingCardModel
     {
-        public ReadActionReceiveType Type { get; set; }
-        public bool IsSuccess { get; set; }
+        public List<CardModel> Cards { get; set; }
     }
 }

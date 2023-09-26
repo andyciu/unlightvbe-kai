@@ -13,7 +13,9 @@ namespace unlightvbe_kai_core.Enum
         DeckCount,
         OpponentHoldingCardCount,
         OpponentPlayingCardCount,
-        SelfDiceTotalNumber,
-        OpponentDiceTotalNumber
+        PlayerDistanceType,
+        OKButtonOpen,
+        OpponentCharacterChangeBegin,
+        OpponentCharacterChangeAction,
     }
 }

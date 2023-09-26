@@ -15,6 +15,12 @@ namespace unlightvbe_kai_core.Interface
         public void DrawActionCard(DrawCardModel data);
         public void DrawEventCard(DrawCardModel data);
         public void UpdateData(UpdateDataModel data);
+        public void UpdateDataMulti(UpdateDataMultiModel data);
+        public void UpdateDataRelative(UpdateDataRelativeModel data);
         public void ReadActionReceive(ReadActionReceiveModel data);
+        public void PhaseStart(PhaseStartModel data);
+        public void OpenOppenentPlayingCard(OpenOppenentPlayingCardModel data);
+        public ChangeCharacterActionModel ChangeCharacterAction();
+        public void ShowJudgment(ShowJudgmentModel data);
     }
 }

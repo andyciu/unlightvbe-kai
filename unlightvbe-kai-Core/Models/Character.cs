@@ -15,7 +15,21 @@ namespace unlightvbe_kai_core.Models
         public int DEF { get; set; }
         public string VBEID { get; set; }
         public string EventColour { get; set; }
-        public string LevelMain { get; set;}
+        public string LevelMain { get; set; }
         public int LevelNum { get; set; }
+
+        public Character() { }
+        public Character(Character character)
+        {
+            Name = character.Name;
+            Title = character.Title;
+            HP = character.HP;
+            ATK = character.ATK;
+            DEF = character.DEF;
+            VBEID = character.VBEID;
+            EventColour = character.EventColour;
+            LevelMain = character.LevelMain;
+            LevelNum = character.LevelNum;
+        }
     }
 }

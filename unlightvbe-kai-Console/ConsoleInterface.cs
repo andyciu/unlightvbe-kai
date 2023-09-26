@@ -10,40 +10,131 @@ using unlightvbe_kai_core.Models.IUserInterface;
 
 namespace unlightvbe_kai_console
 {
-    internal class ConsoleInterface : IUserInterfaceAsync
+    public class ConsoleInterface : IUserInterfaceAsync
     {
+        protected class CharacterData
+        {
+            public Character Character { get; set; }
+            public int CurrentHP { get; set; }
+        }
+
+        protected class PlayerData
+        {
+            public Player Player { get; set; }
+            public List<CharacterData> CharacterDatas { get; set; }
+        }
+
+        /// <summary>
+        /// 執行期名稱
+        /// </summary>
         public string InstanceName { get; set; }
-        private List<CardModel> HoldCards { get; set; } = new List<CardModel>();
-        private List<CardModel> PlayCards { get; set; } = new List<CardModel>();
-        private int OpponentHoldCardCount;
-        private int OpponentPlayCardCount;
-        private int TurnNum;
+        protected PlayerData[] PlayerDatas { get; set; } = new PlayerData[2];
+        /// <summary>
+        /// 手牌清單
+        /// </summary>
+        protected List<CardModel> HoldCards = new List<CardModel>();
+        /// <summary>
+        /// 出牌清單
+        /// </summary>
+        protected List<CardModel> PlayCards = new List<CardModel>();
+        /// <summary>
+        /// 對手出牌清單
+        /// </summary>
+        protected List<CardModel> OpponentPlayCards = new List<CardModel>();
+        /// <summary>
+        /// 對手手牌數量
+        /// </summary>
+        protected int OpponentHoldCardCount;
+        /// <summary>
+        /// 對手出牌數量
+        /// </summary>
+        protected int OpponentPlayCardCount;
+        /// <summary>
+        /// 當前回合數
+        /// </summary>
+        protected int TurnNum;
         /// <summary>
         /// 牌堆卡牌數
         /// </summary>
-        private int DeckNum;
-        private int[] PlayerIds = new int[2];
-        private int[] PlayerDeckIndex = new int[2];
-        private ReadActionModel? LastReadAction = null;
-        private int[] DiceTotalNum = new int[2];
-        private MoveBarSelectType MoveBarSelectType;
-        private bool IsOKButtonClick;
-        public ConsoleInterface(string instanceName)
+        protected int DeckNum;
+        /// <summary>
+        /// 最後讀取行動資料
+        /// </summary>
+        protected ReadActionModel? LastReadAction = null;
+        /// <summary>
+        /// 最後更換角色行動資料
+        /// </summary>
+        protected ChangeCharacterActionModel? LastChangeCharacterAction = null;
+        /// <summary>
+        /// 雙方當前總骰數
+        /// </summary>
+        protected int[] DiceTotalNum = new int[2];
+        /// <summary>
+        /// 雙方當前擲骰有效數
+        /// </summary>
+        protected int[] DiceTrueNum = new int[2];
+        /// <summary>
+        /// 我方移動階段行動選擇
+        /// </summary>
+        protected MoveBarSelectType MoveBarSelectType;
+        /// <summary>
+        /// 我方是否已按下OK按鈕
+        /// </summary>
+        protected bool IsOKButtonClick;
+        /// <summary>
+        /// 當前回合階段
+        /// </summary>
+        protected PhaseStartType PhaseStartType;
+        /// <summary>
+        /// 玩家雙方場上距離
+        /// </summary>
+        protected PlayerDistanceType PlayerDistance = PlayerDistanceType.Middle;
+        /// <summary>
+        /// 對戰每回合攻擊優先方位標記
+        /// </summary>
+        protected UserPlayerRelativeType AttackPhaseFirst;
+        /// <summary>
+        /// 勝負判決紀錄
+        /// </summary>
+        protected ShowJudgmentType ShowJudgmentType = ShowJudgmentType.None;
+        /// <summary>
+        /// 對手是否在更換角色中
+        /// </summary>
+        protected bool IsOpponentCharacterChangeing;
+        public ConsoleInterface(string instanceName, Player selfPlayer, Player opponentPlayer)
         {
             InstanceName = instanceName;
+            PlayerDatas[(int)UserPlayerRelativeType.Self] = new()
+            {
+                Player = selfPlayer,
+                CharacterDatas = selfPlayer.Deck.Deck_Subs.Select(x => new CharacterData()
+                {
+                    Character = x.character,
+                    CurrentHP = x.character.HP
+                }).ToList(),
+            };
+            PlayerDatas[(int)UserPlayerRelativeType.Opponent] = new()
+            {
+                Player = opponentPlayer,
+                CharacterDatas = opponentPlayer.Deck.Deck_Subs.Select(x => new CharacterData()
+                {
+                    Character = x.character,
+                    CurrentHP = x.character.HP
+                }).ToList(),
+            };
         }
 
-        internal virtual string ShowInstanceName()
+        protected virtual string ShowInstanceName()
         {
             return "[" + InstanceName + "]";
         }
 
-        internal virtual void SetConsoleColor()
+        protected virtual void SetConsoleColor()
         {
             Console.ResetColor();
         }
 
-        internal void ConsoleWriteLine(string message)
+        protected void ConsoleWriteLine(string message)
         {
             lock (Console.Out)
             {
@@ -52,7 +143,7 @@ namespace unlightvbe_kai_console
             }
         }
 
-        internal void ConsoleWriteLine(string message, params object?[]? arg)
+        protected void ConsoleWriteLine(string message, params object?[]? arg)
         {
             lock (Console.Out)
             {
@@ -61,7 +152,7 @@ namespace unlightvbe_kai_console
             }
         }
 
-        internal void ConsoleWrite(string message)
+        protected void ConsoleWrite(string message)
         {
             lock (Console.Out)
             {
@@ -73,17 +164,44 @@ namespace unlightvbe_kai_console
         public void ShowStartScreen(ShowStartScreenModel data)
         {
             ConsoleWriteLine("Test_ShowStartScreen");
-            ConsoleWriteLine("Player1_Id=" + data.Player1_Id);
-            ConsoleWriteLine("Player1_DeckIndex=" + data.Player1_DeckIndex);
+            ConsoleWriteLine("PlayerSelf_Id=" + data.PlayerSelf_Id);
 
             Thread.Sleep(1000);
 
-            ConsoleWriteLine("Player2_Id=" + data.Player2_Id);
-            ConsoleWriteLine("Player2_DeckIndex=" + data.Player2_DeckIndex);
-            PlayerIds[(int)UserPlayerType.Player1] = data.Player1_Id;
-            PlayerIds[(int)UserPlayerType.Player2] = data.Player2_Id;
-            PlayerDeckIndex[(int)UserPlayerType.Player1] = data.Player1_DeckIndex;
-            PlayerDeckIndex[(int)UserPlayerType.Player2] = data.Player2_DeckIndex;
+            ConsoleWriteLine("PlayerOpponent_Id=" + data.PlayerOpponent_Id);
+
+            if (PlayerDatas[(int)UserPlayerRelativeType.Self].Player.PlayerId != data.PlayerSelf_Id)
+            {
+                ConsoleWriteLine("PlayerSelf_Id no match.");
+            }
+            if (PlayerDatas[(int)UserPlayerRelativeType.Opponent].Player.PlayerId != data.PlayerOpponent_Id)
+            {
+                ConsoleWriteLine("PlayerOpponent_Id no match.");
+            }
+
+            for (int i = 0; i < PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas.Count; i++)
+            {
+                if (PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas[i].Character.VBEID != data.PlayerSelf_CharacterVBEID[i])
+                {
+                    ConsoleWriteLine("PlayerSelf CharacterData[{0}] VBEID no match.", i);
+                }
+            }
+            for (int i = 0; i < PlayerDatas[(int)UserPlayerRelativeType.Opponent].CharacterDatas.Count; i++)
+            {
+                if (PlayerDatas[(int)UserPlayerRelativeType.Opponent].CharacterDatas[i].Character.VBEID != data.PlayerOpponent_CharacterVBEID[i])
+                {
+                    ConsoleWriteLine("PlayerSelf CharacterData[{0}] VBEID no match.", i);
+                }
+                break; // PlayerOpponent_CharacterVBEID count only one
+            }
+            for (int i = 0; i < data.PlayerSelf_CharacterVBEID.Count; i++)
+            {
+                ConsoleWriteLine("PlayerSelf_CharacterVBEID[{0}]={1}", i + 1, data.PlayerSelf_CharacterVBEID[i]);
+            }
+            for (int i = 0; i < data.PlayerOpponent_CharacterVBEID.Count; i++)
+            {
+                ConsoleWriteLine("PlayerOpponent_CharacterVBEID[{0}]={1}", i + 1, data.PlayerOpponent_CharacterVBEID[i]);
+            }
         }
 
         public void ShowBattleMessage(string message)
@@ -95,12 +213,12 @@ namespace unlightvbe_kai_console
         {
             ReadActionModel? readActionModel = null;
 
-            while (readActionModel == null)
+            while (readActionModel == null && !IsOKButtonClick)
             {
                 string tmpstr = string.Empty;
                 while (string.IsNullOrEmpty(tmpstr))
                 {
-                    Console.Write(ShowInstanceName() + "Action(\"Type Message\"): ");
+                    ConsoleWrite("Action(\"Type Message\"): ");
                     tmpstr = Console.ReadLine();
                 }
 
@@ -156,7 +274,7 @@ namespace unlightvbe_kai_console
                             Type = UserActionType.OKButtonClick
                         };
                         break;
-                    case "SHOWCARD":
+                    case "SC": //ShowCard
                         ConsoleWriteLine("HoldCards:");
                         foreach (var card in HoldCards)
                         {
@@ -168,15 +286,26 @@ namespace unlightvbe_kai_console
                             ConsoleWriteLine("({0}){1}/{2}/{3}/{4}", card.Number, card.UpperType.ToString(), card.UpperNum, card.LowerType.ToString(), card.LowerNum);
                         }
                         break;
-                    case "SHOWTURN":
+                    case "SI": //ShowInfo
                         ConsoleWriteLine("Turn=" + TurnNum);
-                        break;
-                    case "SHOWDECK":
+                        ConsoleWriteLine("Phase=" + PhaseStartType.ToString());
+                        ConsoleWriteLine("Distance=" + PlayerDistance.ToString());
                         ConsoleWriteLine("Deck=" + DeckNum);
                         ConsoleWriteLine("SelfHold=" + HoldCards.Count);
                         ConsoleWriteLine("SelfPlay=" + PlayCards.Count);
                         ConsoleWriteLine("OpponentHold=" + OpponentHoldCardCount);
                         ConsoleWriteLine("OpponentPlay=" + OpponentPlayCardCount);
+                        break;
+                    case "SA": //ShowchAracter
+                        foreach (var playertype in Enum.GetValues<UserPlayerRelativeType>())
+                        {
+                            int tmpnum = 0;
+                            foreach (var characterdata in PlayerDatas[(int)playertype].CharacterDatas)
+                            {
+                                ConsoleWriteLine("{0}[{1}]={2}({3}/{4}/{5}/{6})", playertype.ToString(), tmpnum++, characterdata.Character.Name,
+                                    characterdata.Character.VBEID, characterdata.CurrentHP, characterdata.Character.ATK, characterdata.Character.DEF);
+                            }
+                        }
                         break;
                     default:
                         ConsoleWriteLine("Action Unknown. Please try again.");
@@ -184,8 +313,10 @@ namespace unlightvbe_kai_console
                 }
             }
 
+            if (IsOKButtonClick) ConsoleWriteLine("ReadAction-OKButtonClicked.");
+
             LastReadAction = readActionModel;
-            return readActionModel;
+            return readActionModel!;
         }
         public Task ShowStartScreenAsync(ShowStartScreenModel data)
         {
@@ -213,9 +344,11 @@ namespace unlightvbe_kai_console
             {
                 HoldCards.Add(card);
                 ConsoleWriteLine("({0}){1}/{2}/{3}/{4}", card.Number, card.UpperType.ToString(), card.UpperNum, card.LowerType.ToString(), card.LowerNum);
+                DeckNum--;
             }
 
             OpponentHoldCardCount += data.OpponentCardCount;
+            DeckNum -= data.OpponentCardCount;
             ConsoleWriteLine("OpponentHoldCardCount=" + OpponentHoldCardCount);
         }
 
@@ -228,7 +361,9 @@ namespace unlightvbe_kai_console
         public void UpdateData(UpdateDataModel data)
         {
             ConsoleWriteLine("Test_UpdateData");
-            ConsoleWriteLine(data.Type.ToString() + ":" + data.Value);
+            ConsoleWriteLine(data.Type.ToString() + ":" + data.Value + ":" + data.Message);
+
+            CharacterData? characterData = null;
 
             switch (data.Type)
             {
@@ -246,11 +381,42 @@ namespace unlightvbe_kai_console
                     OpponentHoldCardCount -= data.Value;
                     OpponentPlayCardCount += data.Value;
                     break;
-                case UpdateDataType.SelfDiceTotalNumber:
-                    DiceTotalNum[(int)UserPlayerType.Player1] = data.Value;
+                case UpdateDataType.PlayerDistanceType:
+                    PlayerDistance = (PlayerDistanceType)data.Value;
                     break;
-                case UpdateDataType.OpponentDiceTotalNumber:
-                    DiceTotalNum[(int)UserPlayerType.Player2] = data.Value;
+                case UpdateDataType.OKButtonOpen:
+                    IsOKButtonClick = false;
+                    break;
+                case UpdateDataType.OpponentCharacterChangeBegin:
+                    IsOpponentCharacterChangeing = true;
+                    Task.Run(() =>
+                    {
+                        ConsoleWrite("Opponent Character Changeing");
+                        while (IsOpponentCharacterChangeing)
+                        {
+                            ConsoleWrite(".");
+                            Thread.Sleep(1000);
+                        }
+                    });
+                    break;
+                case UpdateDataType.OpponentCharacterChangeAction:
+                    if (!string.IsNullOrEmpty(data.Message))
+                    {
+                        characterData = PlayerDatas[(int)UserPlayerRelativeType.Opponent].CharacterDatas.Find(x => x.Character.VBEID == data.Message!);
+                        if (characterData != null)
+                        {
+                            PlayerDatas[(int)UserPlayerRelativeType.Opponent].CharacterDatas.Remove(characterData);
+                            PlayerDatas[(int)UserPlayerRelativeType.Opponent].CharacterDatas.Insert(0, characterData);
+                        }
+                        else
+                        {
+                            ConsoleWriteLine("OpponentCharacterChangeAction VBEID not found.");
+                        }
+                    }
+
+                    break;
+                default:
+                    ConsoleWriteLine("UpdateData Type not found.");
                     break;
             }
         }
@@ -298,6 +464,14 @@ namespace unlightvbe_kai_console
             ConsoleWriteLine("Test_ReadActionReceive");
             ConsoleWriteLine(data.Type.ToString());
 
+            CharacterData? characterData = null;
+
+            if (!data.IsSuccess)
+            {
+                ConsoleWriteLine("IsSuccess=" + data.IsSuccess.ToString());
+                return;
+            }
+
             switch (data.Type)
             {
                 case ReadActionReceiveType.HoldingCard:
@@ -344,6 +518,216 @@ namespace unlightvbe_kai_console
                     break;
                 case ReadActionReceiveType.OKButtonClick:
                     IsOKButtonClick = true;
+                    break;
+                case ReadActionReceiveType.ChangeCharacter:
+                    if (LastChangeCharacterAction != null)
+                    {
+                        characterData = PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas.Find(x => x.Character.VBEID == LastChangeCharacterAction.NewCharacterVBEID);
+                        if (characterData != null)
+                        {
+                            PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas.Remove(characterData);
+                            PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas.Insert(0, characterData);
+                            ConsoleWriteLine("ChangeCharacter:" + characterData.Character.VBEID);
+                        }
+                        else
+                        {
+                            ConsoleWriteLine("ChangeCharacter VBEID not found.");
+                        }
+                    }
+                    break;
+                default:
+                    ConsoleWrite("ReadActionReceiveType not found.");
+                    break;
+            }
+        }
+
+        public Task PhaseStartAsync(PhaseStartModel data)
+        {
+            PhaseStart(data);
+            return Task.CompletedTask;
+        }
+
+        public void PhaseStart(PhaseStartModel data)
+        {
+            ConsoleWriteLine("Test_PhaseStart");
+            ConsoleWriteLine(data.Type.ToString());
+
+            PhaseStartType = data.Type;
+        }
+
+        public Task UpdateDataMultiAsync(UpdateDataMultiModel data)
+        {
+            UpdateDataMulti(data);
+            return Task.CompletedTask;
+        }
+
+        public void UpdateDataMulti(UpdateDataMultiModel data)
+        {
+            ConsoleWriteLine("Test_UpdateDataMulti");
+
+            switch (data.Type)
+            {
+                case UpdateDataMultiType.DiceTotal:
+                    ConsoleWriteLine("SelfDiceTotal=" + data.Self.ToString());
+                    ConsoleWriteLine("OpponentDiceTotal=" + data.Opponent.ToString());
+
+                    DiceTotalNum[(int)UserPlayerRelativeType.Self] = data.Self;
+                    DiceTotalNum[(int)UserPlayerRelativeType.Opponent] = data.Opponent;
+
+                    break;
+                case UpdateDataMultiType.PlayedCardCollectCount:
+                    ConsoleWriteLine("SelfPlayedCardCollectCount=" + data.Self.ToString());
+                    ConsoleWriteLine("OpponentPlayedCardCollectCount=" + data.Opponent.ToString());
+
+                    if (PlayCards.Count != data.Self) ConsoleWriteLine("SelfPlayedCardCollectCount no match.");
+                    if (OpponentPlayCardCount != data.Opponent) ConsoleWriteLine("OpponentPlayedCardCollectCount no match.");
+
+                    PlayCards.Clear();
+                    OpponentPlayCardCount = 0;
+
+                    break;
+                case UpdateDataMultiType.DiceTrue:
+                    ConsoleWriteLine("SelfDiceTrue=" + data.Self.ToString());
+                    ConsoleWriteLine("OpponentDiceTrue=" + data.Opponent.ToString());
+
+                    DiceTrueNum[(int)UserPlayerRelativeType.Self] = data.Self;
+                    DiceTrueNum[(int)UserPlayerRelativeType.Opponent] = data.Opponent;
+                    break;
+                default:
+                    ConsoleWrite("UpdateDataMultiType not found.");
+                    break;
+            }
+        }
+
+        public Task OpenOppenentPlayingCardAsync(OpenOppenentPlayingCardModel data)
+        {
+            OpenOppenentPlayingCard(data);
+            return Task.CompletedTask;
+        }
+
+        public void OpenOppenentPlayingCard(OpenOppenentPlayingCardModel data)
+        {
+            ConsoleWriteLine("Test_OpenOppenentPlayingCard");
+
+            foreach (var card in data.Cards)
+            {
+                OpponentPlayCards.Add(card);
+                ConsoleWriteLine("({0}){1}/{2}/{3}/{4}", card.Number, card.UpperType.ToString(), card.UpperNum, card.LowerType.ToString(), card.LowerNum);
+            }
+
+            if (OpponentPlayCardCount != data.Cards.Count) ConsoleWriteLine("OpponentPlayedCardCollectCount no match.");
+        }
+
+        public Task ShowJudgmentAsync(ShowJudgmentModel data)
+        {
+            ShowJudgment(data);
+            return Task.CompletedTask;
+        }
+
+        public void ShowJudgment(ShowJudgmentModel data)
+        {
+            ConsoleWriteLine("Test_ShowJudgment");
+            ConsoleWriteLine(data.Type.ToString());
+
+            ShowJudgmentType = data.Type;
+        }
+
+        public ChangeCharacterActionModel ChangeCharacterAction()
+        {
+            ChangeCharacterActionModel? changeCharacterActionModel = null;
+
+            while (changeCharacterActionModel == null)
+            {
+                string tmpstr = string.Empty;
+                int tmpnum = 0;
+
+                ConsoleWriteLine("ChangeCharacterAction");
+
+                foreach (var characterdata in PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas)
+                {
+                    if (tmpnum == 0)
+                    {
+                        tmpnum++;
+                        continue;
+                    }
+                    ConsoleWriteLine("Self[{1}]={2}({3}/{4}/{5}/{6})", tmpnum++, characterdata.Character.Name,
+                        characterdata.Character.VBEID, characterdata.CurrentHP, characterdata.Character.ATK, characterdata.Character.DEF);
+                }
+                while (string.IsNullOrEmpty(tmpstr))
+                {
+                    ConsoleWrite("Type new go on stage character VBEID:");
+                    tmpstr = Console.ReadLine();
+                }
+
+                if (PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas.Any(x => x.Character.VBEID == tmpstr))
+                {
+                    if (tmpstr != PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas[0].Character.VBEID)
+                    {
+                        changeCharacterActionModel = new()
+                        {
+                            NewCharacterVBEID = tmpstr,
+                        };
+                        break;
+                    }
+                    else
+                    {
+                        ConsoleWriteLine("Character on stage cannot be assigned.");
+                    }
+                }
+            }
+
+            LastChangeCharacterAction = changeCharacterActionModel;
+            return changeCharacterActionModel;
+        }
+
+        public Task UpdateDataRelativeAsync(UpdateDataRelativeModel data)
+        {
+            UpdateDataRelative(data);
+            return Task.CompletedTask;
+        }
+
+        public void UpdateDataRelative(UpdateDataRelativeModel data)
+        {
+            ConsoleWriteLine("Test_UpdateDataRelative");
+            ConsoleWriteLine(data.Player.ToString());
+            ConsoleWriteLine(data.Type.ToString());
+
+            CharacterData? characterData = null;
+            switch (data.Type)
+            {
+                case UpdateDataRelativeType.AttackPhaseFirstPlayerType:
+                    AttackPhaseFirst = data.Player;
+                    break;
+                case UpdateDataRelativeType.CharacterHPDamage:
+                    characterData = PlayerDatas[(int)data.Player].CharacterDatas.Find(x => x.Character.VBEID == data.Message);
+                    if (characterData != null)
+                    {
+                        characterData.CurrentHP -= data.Value;
+                        if (characterData.CurrentHP < 0) characterData.CurrentHP = 0;
+
+                        ConsoleWriteLine("{0} take {1} damage.", data.Player.ToString(), data.Value);
+                    }
+                    else
+                    {
+                        ConsoleWriteLine("CharacterHPDamage CharacterData not found.");
+                    }
+                    break;
+                case UpdateDataRelativeType.CharacterHPHeal:
+                    characterData = PlayerDatas[(int)data.Player].CharacterDatas.Find(x => x.Character.VBEID == data.Message);
+                    if (characterData != null)
+                    {
+                        characterData.CurrentHP += data.Value;
+                        if (characterData.CurrentHP > characterData.Character.HP) characterData.CurrentHP = characterData.Character.HP;
+
+                        ConsoleWriteLine("{0} restore {1} HP.", data.Player.ToString(), data.Value);
+                    }
+                    else
+                    {
+                        ConsoleWriteLine("CharacterHPHeal CharacterData not found.");
+                    }
+                    break;
+                default:
+                    ConsoleWriteLine("UpdateDataRelativeType not found.");
                     break;
             }
         }

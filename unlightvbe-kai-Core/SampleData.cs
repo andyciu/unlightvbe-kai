@@ -10,53 +10,112 @@ namespace unlightvbe_kai_core
 {
     public class SampleData
     {
+        public List<Character> Characters { get; set; } = new();
+        public List<Deck_Sub> Deck_Subs { get; set; } = new();
+        public List<Deck> Decks { get; set; } = new();
+        public List<Player> Players { get; set; } = new();
+        public static readonly Random Rnd = new Random();
+        public SampleData()
+        {
+            Characters.Add(new()
+            {
+                Name = "Ria",
+                HP = 9,
+                ATK = 5,
+                DEF = 10,
+                VBEID = "S00105",
+                EventColour = "357000",
+                LevelMain = "LV",
+                LevelNum = 5,
+            });
+            Characters.Add(new()
+            {
+                Name = "Evarist",
+                HP = 12,
+                ATK = 7,
+                DEF = 7,
+                VBEID = "N01105",
+                EventColour = "325000",
+                LevelMain = "LV",
+                LevelNum = 5,
+            });
+
+            for (int i = 0; i < 2; i++)
+            {
+                Deck_Subs.Add(new()
+                {
+                    character = Characters[i],
+                    eventCards = GetCardList_Event()
+                });
+
+                Decks.Add(new()
+                {
+                    Name = "D" + i.ToString(),
+                    Deck_Subs = new() { Deck_Subs[i] }
+                });
+            }
+
+            Players.Add(new()
+            {
+                Name = "AAA",
+                PlayerId = 1,
+                Deck = Decks[0]
+            });
+
+            Players.Add(new()
+            {
+                Name = "BBB",
+                PlayerId = 2,
+                Deck = Decks[1]
+            });
+        }
         public static List<ActionCard> GetCardList_Deck()
         {
             var cards = new List<ActionCard>();
 
-            for (int i = 1, j = 1; j <= 6; j++)
+            for (int i = 1; i <= 6; i++)
             {
                 cards.Add(new ActionCard
                 {
                     UpperType = ActionCardType.ATK_Sword,
-                    UpperNum = i,
+                    UpperNum = Rnd.Next(1, 7),
                     LowerType = ActionCardType.ATK_Gun,
-                    LowerNum = j,
+                    LowerNum = Rnd.Next(1, 7),
                 });
                 cards.Add(new ActionCard
                 {
                     UpperType = ActionCardType.ATK_Sword,
-                    UpperNum = j,
-                    LowerType = ActionCardType.ATK_Gun,
-                    LowerNum = i,
-                });
-                cards.Add(new ActionCard
-                {
-                    UpperType = ActionCardType.ATK_Sword,
-                    UpperNum = j,
-                    LowerType = ActionCardType.ATK_Gun,
-                    LowerNum = j,
-                });
-                cards.Add(new ActionCard
-                {
-                    UpperType = ActionCardType.DEF,
-                    UpperNum = j,
+                    UpperNum = Rnd.Next(1, 7),
                     LowerType = ActionCardType.DEF,
-                    LowerNum = j,
+                    LowerNum = Rnd.Next(1, 7),
+                });
+                cards.Add(new ActionCard
+                {
+                    UpperType = ActionCardType.ATK_Gun,
+                    UpperNum = Rnd.Next(1, 7),
+                    LowerType = ActionCardType.DEF,
+                    LowerNum = Rnd.Next(1, 7),
+                });
+                cards.Add(new ActionCard
+                {
+                    UpperType = ActionCardType.ATK_Sword,
+                    UpperNum = Rnd.Next(1, 7),
+                    LowerType = ActionCardType.SPE,
+                    LowerNum = Rnd.Next(1, 7),
+                });
+                cards.Add(new ActionCard
+                {
+                    UpperType = ActionCardType.ATK_Gun,
+                    UpperNum = Rnd.Next(1, 7),
+                    LowerType = ActionCardType.SPE,
+                    LowerNum = Rnd.Next(1, 7),
                 });
                 cards.Add(new ActionCard
                 {
                     UpperType = ActionCardType.MOV,
-                    UpperNum = i,
+                    UpperNum = Rnd.Next(1, 7),
                     LowerType = ActionCardType.SPE,
-                    LowerNum = j,
-                });
-                cards.Add(new ActionCard
-                {
-                    UpperType = ActionCardType.MOV,
-                    UpperNum = j,
-                    LowerType = ActionCardType.SPE,
-                    LowerNum = i,
+                    LowerNum = Rnd.Next(1, 7),
                 });
             }
 
@@ -71,14 +130,24 @@ namespace unlightvbe_kai_core
             {
                 cards.Add(new EventCard
                 {
-                    UpperType = ActionCardType.ATK_Sword,
-                    UpperNum = 6,
-                    LowerType = ActionCardType.ATK_Gun,
-                    LowerNum = 6,
+                    UpperType = (ActionCardType)Rnd.Next(1, 6),
+                    UpperNum = Rnd.Next(1, 7),
+                    LowerType = (ActionCardType)Rnd.Next(1, 6),
+                    LowerNum = Rnd.Next(1, 7),
                 });
             }
 
             return cards;
+        }
+
+        public Player GetPlayer(int id)
+        {
+            return Players.Find(x => x.PlayerId == id) ?? Players[0];
+        }
+
+        public Character GetCharacter(string VBEID)
+        {
+            return Characters.Find(x => x.VBEID == VBEID) ?? Characters[0];
         }
     }
 }

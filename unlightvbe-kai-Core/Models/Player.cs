@@ -10,8 +10,6 @@ namespace unlightvbe_kai_core.Models
     {
         public int PlayerId { get; set; }
         public string Name { get; set; }
-        public int WinNum { get; set; }
-        public int LoseNum { get; set; }
-        public List<Deck>? Decks { get; set; }
+        public Deck Deck { get; set; }
     }
 }

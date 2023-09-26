@@ -11,16 +11,44 @@ namespace unlightvbe_kai_core
 {
     public class PlayerData
     {
-        public Player Player { get; set; }
-        public int DeckIndex { get; set; }
+        public Player Player { get; }
+        public List<CharacterData> CharacterDatas { get; set; }
+        public CharacterData CurrentCharacter
+        {
+            get
+            {
+                return CharacterDatas[0];
+            }
+        }
         public int HoldMaxCount { get; set; }
         public IUserInterfaceAsync UserInterface { get; set; }
         public MoveBarSelectType MoveBarSelect { get; set; }
         public bool IsOKButtonSelect { get; set; }
-        public PlayerData(Player player, int deckIndex)
+        public UserPlayerType PlayerType { get; }
+        public int DiceTotal { get; set; }
+        private readonly Dictionary<string, CharacterData> CharacterVBEIDDict = new();
+        public PlayerData(Player player, UserPlayerType playerType)
         {
             Player = player;
-            DeckIndex = deckIndex;
+            PlayerType = playerType;
+
+            CharacterDatas = new List<CharacterData>();
+            foreach (var deck_Sub in player.Deck.Deck_Subs)
+            {
+                var newData = new CharacterData(new(deck_Sub.character));
+                CharacterDatas.Add(newData);
+                CharacterVBEIDDict.Add(deck_Sub.character.VBEID, newData);
+            }
+        }
+
+        public CharacterData? GetCharacterData(string characterVBEID)
+        {
+            CharacterData? characterData;
+            if (CharacterVBEIDDict.TryGetValue(characterVBEID, out characterData))
+            {
+                return characterData;
+            }
+            return null;
         }
     }
 }

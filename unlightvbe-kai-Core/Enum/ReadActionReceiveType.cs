@@ -17,6 +17,7 @@ namespace unlightvbe_kai_core.Enum
         BarMoveRight,
         BarMoveStay,
         BarMoveChange,
-        OKButtonClick
+        OKButtonClick,
+        ChangeCharacter
     }
 }

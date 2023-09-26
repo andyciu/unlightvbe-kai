@@ -7,9 +7,10 @@ using unlightvbe_kai_core.Enum;
 
 namespace unlightvbe_kai_core.Models.IUserInterface
 {
-    public class ReadActionReceiveModel
+    public class UpdateDataMultiModel
     {
-        public ReadActionReceiveType Type { get; set; }
-        public bool IsSuccess { get; set; }
+        public UpdateDataMultiType Type { get; set; }
+        public int Self { get; set; }
+        public int Opponent { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Numerics;
 using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
@@ -15,6 +16,10 @@ namespace unlightvbe_kai_core
         /// 是否已結束對戰
         /// </summary>
         protected bool IsFinish { get; set; }
+        /// <summary>
+        /// 是否進入勝負判斷模式
+        /// </summary>
+        private bool IsJudgmentMode { get; set; } = false;
         /// <summary>
         /// 對雙方玩家使用者介面資訊配置器
         /// </summary>
@@ -39,19 +44,32 @@ namespace unlightvbe_kai_core
         /// 對戰模式
         /// </summary>
         private PlayerVersusModeType PlayerVersusMode;
+        /// <summary>
+        /// 玩家雙方場上距離
+        /// </summary>
+        private PlayerDistanceType PlayerDistance;
+        /// <summary>
+        /// 對戰每回合攻擊優先方位標記
+        /// </summary>
+        private UserPlayerType AttackPhaseFirst;
+        /// <summary>
+        /// 對戰雙方勝負結果
+        /// </summary>
+        public ShowJudgmentType[] PlayerJudgment { get; private set; } = { ShowJudgmentType.None, ShowJudgmentType.None };
+        public static readonly Random Rnd = new(DateTime.Now.Millisecond);
 
 
-        public BattleSystem(Player player1, Player player2, int deckIndex_P1, int deckIndex_P2)
+        public BattleSystem(Player player1, Player player2)
         {
             try
             {
-                PlayerDatas[(int)UserPlayerType.Player1] = new(player1, deckIndex_P1);
-                PlayerDatas[(int)UserPlayerType.Player2] = new(player2, deckIndex_P2);
-                if (player1.Decks[deckIndex_P1].Deck_Subs.Count == 1 && player2.Decks[deckIndex_P2].Deck_Subs.Count == 1)
+                PlayerDatas[(int)UserPlayerType.Player1] = new(player1, UserPlayerType.Player1);
+                PlayerDatas[(int)UserPlayerType.Player2] = new(player2, UserPlayerType.Player2);
+                if (player1.Deck.Deck_Subs.Count == 1 && player2.Deck.Deck_Subs.Count == 1)
                 {
                     PlayerVersusMode = PlayerVersusModeType.OneOnOne;
                 }
-                else if (player1.Decks[deckIndex_P1].Deck_Subs.Count == 3 && player2.Decks[deckIndex_P2].Deck_Subs.Count == 3)
+                else if (player1.Deck.Deck_Subs.Count == 3 && player2.Deck.Deck_Subs.Count == 3)
                 {
                     PlayerVersusMode = PlayerVersusModeType.ThreeOnThree;
                 }
@@ -76,10 +94,18 @@ namespace unlightvbe_kai_core
 
         public void Start()
         {
+            if (IsFinish) return;
+
             InitialData();
             StartScreenPhase();
-            DrawPhase();
-            MovePhase();
+            while (TurnNum <= TurnMaxNum && !IsJudgmentMode)
+            {
+                if (!IsJudgmentMode) DrawPhase(); else break;
+                if (!IsJudgmentMode) MovePhase(); else break;
+                if (!IsJudgmentMode) AttackWithDefensePhase(); else break;
+            }
+            JudgmentPhase();
+            IsFinish = true;
         }
 
         public bool CheckisFinish()
@@ -93,7 +119,7 @@ namespace unlightvbe_kai_core
             CardDecks = new List<Dictionary<int, Card>>();
             CardDeckIndex = new Dictionary<int, CardDeckType>();
 
-            foreach (var type in (CardDeckType[])System.Enum.GetValues(typeof(CardDeckType)))
+            foreach (var type in System.Enum.GetValues<CardDeckType>())
             {
                 CardDecks.Add(new Dictionary<int, Card>());
             }
@@ -112,6 +138,8 @@ namespace unlightvbe_kai_core
                 player.HoldMaxCount = 5;
             }
 
+            PlayerDistance = PlayerDistanceType.Middle;
+
         }
 
         /// <summary>
@@ -121,10 +149,10 @@ namespace unlightvbe_kai_core
         {
             MultiUIAdapter.ShowStartScreen(new()
             {
-                Player1_Id = PlayerDatas[(int)UserPlayerType.Player1].Player.PlayerId,
-                Player2_Id = PlayerDatas[(int)UserPlayerType.Player2].Player.PlayerId,
-                Player1_DeckIndex = PlayerDatas[(int)UserPlayerType.Player1].DeckIndex,
-                Player2_DeckIndex = PlayerDatas[(int)UserPlayerType.Player2].DeckIndex,
+                PlayerSelf_Id = PlayerDatas[(int)UserPlayerType.Player1].Player.PlayerId,
+                PlayerOpponent_Id = PlayerDatas[(int)UserPlayerType.Player2].Player.PlayerId,
+                PlayerSelf_CharacterVBEID = PlayerDatas[(int)UserPlayerType.Player1].CharacterDatas.Select(x => x.Character.VBEID).ToList(),
+                PlayerOpponent_CharacterVBEID = PlayerDatas[(int)UserPlayerType.Player2].CharacterDatas.Select(x => x.Character.VBEID).ToList()
             });
         }
 
@@ -142,10 +170,15 @@ namespace unlightvbe_kai_core
 
             //回合數增加
             TurnNum += 1;
-            MultiUIAdapter.UpdateData(new()
+            MultiUIAdapter.UpdateData_All(new()
             {
                 Type = UpdateDataType.TurnNumber,
                 Value = TurnNum
+            });
+
+            MultiUIAdapter.PhaseStart(new()
+            {
+                Type = PhaseStartType.Draw
             });
 
             //若牌堆集合卡牌數量不足時進行洗牌
@@ -156,7 +189,7 @@ namespace unlightvbe_kai_core
             }
 
             //同步牌堆數量
-            MultiUIAdapter.UpdateData(new()
+            MultiUIAdapter.UpdateData_All(new()
             {
                 Type = UpdateDataType.DeckCount,
                 Value = CardDecks[(int)CardDeckType.Deck].Count
@@ -213,6 +246,13 @@ namespace unlightvbe_kai_core
             }
 
             MultiUIAdapter.DrawEventCard(eventCards[0], eventCards[1]);
+
+            //同步牌堆數量
+            MultiUIAdapter.UpdateData_All(new()
+            {
+                Type = UpdateDataType.DeckCount,
+                Value = CardDecks[(int)CardDeckType.Deck].Count
+            });
         }
 
         /// <summary>
@@ -226,7 +266,218 @@ namespace unlightvbe_kai_core
                 player.IsOKButtonSelect = false;
             }
 
+            MultiUIAdapter.PhaseStart(new()
+            {
+                Type = PhaseStartType.Move
+            });
+
             MultiUIAdapter.MovePhaseReadAction();
+
+            //回血動作
+            foreach (var player in PlayerDatas)
+            {
+                if (player.MoveBarSelect == MoveBarSelectType.Stay)
+                {
+                    CharacterHPHeal(player.PlayerType, player.CurrentCharacter.Character.VBEID, 1);
+                }
+            }
+
+            //加總移動值
+            Dictionary<ActionCardType, int>[] cardtotal = new Dictionary<ActionCardType, int>[2];
+            int[] movPlayerTotal = new int[2] { 0, 0 };
+            int movSystemTotal = 0;
+
+            foreach (var player in System.Enum.GetValues<UserPlayerType>())
+            {
+                cardtotal[(int)player] = GetCardTotalNumber(player, ActionCardLocation.Play);
+                cardtotal[(int)player].TryGetValue(ActionCardType.MOV, out movPlayerTotal[(int)player]);
+
+                switch (PlayerDatas[(int)player].MoveBarSelect)
+                {
+                    case MoveBarSelectType.Left:
+                        movSystemTotal += movPlayerTotal[(int)player];
+                        break;
+                    case MoveBarSelectType.Right:
+                        movSystemTotal -= movPlayerTotal[(int)player];
+                        break;
+                }
+            }
+
+            //計算移動距離
+            if (movSystemTotal != 0)
+            {
+                int newDistance = (int)PlayerDistance + movSystemTotal;
+                PlayerDistance = newDistance switch
+                {
+                    > 2 => PlayerDistanceType.Long,
+                    < 0 => PlayerDistanceType.Close,
+                    _ => (PlayerDistanceType)newDistance
+                };
+            }
+
+            //判斷優先權
+            if (movPlayerTotal[(int)UserPlayerType.Player1] > movPlayerTotal[(int)UserPlayerType.Player2])
+            {
+                AttackPhaseFirst = UserPlayerType.Player1;
+            }
+            else if (movPlayerTotal[(int)UserPlayerType.Player1] < movPlayerTotal[(int)UserPlayerType.Player2])
+            {
+                AttackPhaseFirst = UserPlayerType.Player2;
+            }
+            else
+            {
+                AttackPhaseFirst = (UserPlayerType)Rnd.Next(2);
+            }
+
+            MultiUIAdapter.UpdateData_All(new()
+            {
+                Type = UpdateDataType.PlayerDistanceType,
+                Value = (int)PlayerDistance
+            });
+
+            MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.AttackPhaseFirstPlayerType, AttackPhaseFirst, 0, null);
+
+            MultiUIAdapter.OpenOppenentPlayingCard(
+                CardDecks[(int)CardDeckType.Play_P1].Select(x => x.Value).ToList(),
+                CardDecks[(int)CardDeckType.Play_P2].Select(x => x.Value).ToList());
+
+            //收牌
+            CollectPlayingCardToGraveyard();
+
+            //交換角色動作
+            foreach (var player in PlayerDatas)
+            {
+                if (player.MoveBarSelect == MoveBarSelectType.Change)
+                {
+                    MultiUIAdapter.ChangeCharacterAction(player.PlayerType);
+                }
+            }
+
+            //角色存活檢查
+            if (!PlayerCharacterHPCheck())
+            {
+                IsJudgmentMode = true;
+            }
+        }
+
+        /// <summary>
+        /// 攻擊/防禦階段
+        /// </summary>
+        private void AttackWithDefensePhase()
+        {
+            UserPlayerType attackPlyaer, defensePlayer;
+            int[] diceTrue;
+            int diceTrueTotal;
+
+            for (int i = 0; i < 2; i++)
+            {
+                if (i == 0)
+                {
+                    attackPlyaer = AttackPhaseFirst;
+                    defensePlayer = AttackPhaseFirst == UserPlayerType.Player1 ? UserPlayerType.Player2 : UserPlayerType.Player1;
+                }
+                else
+                {
+                    attackPlyaer = AttackPhaseFirst == UserPlayerType.Player1 ? UserPlayerType.Player2 : UserPlayerType.Player1;
+                    defensePlayer = AttackPhaseFirst;
+                }
+
+                foreach (var player in PlayerDatas)
+                {
+                    player.DiceTotal = 0;
+                    player.IsOKButtonSelect = false;
+                }
+
+                MultiUIAdapter.PhaseStartAttackWithDefense(attackPlyaer);
+
+                //Attack Action
+                MultiUIAdapter.AttackWithDefensePhaseReadAction(attackPlyaer, PhaseStartType.Attack);
+                MultiUIAdapter.OpenOppenentPlayingCard(defensePlayer,
+                    CardDecks[(int)GetCardDeckType(attackPlyaer, ActionCardLocation.Play)].Select(x => x.Value).ToList());
+
+                //Defense Action
+                MultiUIAdapter.AttackWithDefensePhaseReadAction(defensePlayer, PhaseStartType.Defense);
+                MultiUIAdapter.OpenOppenentPlayingCard(attackPlyaer,
+                    CardDecks[(int)GetCardDeckType(defensePlayer, ActionCardLocation.Play)].Select(x => x.Value).ToList());
+
+                //骰數再計算
+                UpdatePlayerDiceTotalNumber(attackPlyaer, PhaseStartType.Attack);
+                UpdatePlayerDiceTotalNumber(defensePlayer, PhaseStartType.Defense);
+                MultiUIAdapter.UpdateDiceTotalNumberRelative(attackPlyaer, defensePlayer,
+                    PlayerDatas[(int)attackPlyaer].DiceTotal, PlayerDatas[(int)defensePlayer].DiceTotal);
+
+
+                if (PlayerDatas[(int)attackPlyaer].DiceTotal > 0)
+                {
+                    MultiUIAdapter.ShowBattleMessage(string.Format("Determines attack power {0}.", PlayerDatas[(int)attackPlyaer].DiceTotal));
+                }
+                else
+                {
+                    MultiUIAdapter.ShowBattleMessage("Cancel attack.");
+                }
+
+                //收牌
+                CollectPlayingCardToGraveyard();
+
+                //擲骰
+                diceTrue = new int[2];
+                foreach (var player in PlayerDatas)
+                {
+                    diceTrue[(int)player.PlayerType] = DiceAction(player.DiceTotal);
+                }
+
+                MultiUIAdapter.UpdateDiceTrueNumber(diceTrue[(int)UserPlayerType.Player1], diceTrue[(int)UserPlayerType.Player2]);
+
+                //傷害計算
+                diceTrueTotal = diceTrue[(int)attackPlyaer] - diceTrue[(int)defensePlayer];
+
+                if (diceTrueTotal > 0)
+                {
+                    CharacterHPDamage(defensePlayer, PlayerDatas[(int)defensePlayer].CurrentCharacter.Character.VBEID, diceTrueTotal);
+                }
+
+                //角色存活檢查
+                if (!PlayerCharacterHPCheck())
+                {
+                    IsJudgmentMode = true;
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 對戰勝負判斷階段
+        /// </summary>
+        private void JudgmentPhase()
+        {
+            int[] hpTotal = new int[2];
+            foreach (var player in PlayerDatas)
+            {
+                foreach (var characterData in player.CharacterDatas)
+                {
+                    if (characterData.CurrentHP > 0)
+                    {
+                        hpTotal[(int)player.PlayerType] += characterData.CurrentHP;
+                    }
+                }
+            }
+
+            if (hpTotal[(int)UserPlayerType.Player1] > hpTotal[(int)UserPlayerType.Player2])
+            {
+                PlayerJudgment[(int)UserPlayerType.Player1] = ShowJudgmentType.Victory;
+                PlayerJudgment[(int)UserPlayerType.Player2] = ShowJudgmentType.Defeat;
+            }
+            else if (hpTotal[(int)UserPlayerType.Player1] < hpTotal[(int)UserPlayerType.Player2])
+            {
+                PlayerJudgment[(int)UserPlayerType.Player1] = ShowJudgmentType.Defeat;
+                PlayerJudgment[(int)UserPlayerType.Player2] = ShowJudgmentType.Victory;
+            }
+            else
+            {
+                PlayerJudgment[(int)UserPlayerType.Player1] = ShowJudgmentType.Draw;
+                PlayerJudgment[(int)UserPlayerType.Player2] = ShowJudgmentType.Draw;
+            }
+            MultiUIAdapter.ShowJudgment(PlayerJudgment[(int)UserPlayerType.Player1], PlayerJudgment[(int)UserPlayerType.Player2]);
         }
     }
 }

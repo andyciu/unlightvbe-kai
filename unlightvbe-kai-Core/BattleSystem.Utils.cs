@@ -20,11 +20,10 @@ namespace unlightvbe_kai_core
         {
             var tmpdeck = new Dictionary<int, Card>(origdeck);
             var newdeck = new Dictionary<int, Card>();
-            Random rnd = new(DateTime.Now.Millisecond);
 
             while (tmpdeck.Count > 0)
             {
-                var tmpnum = rnd.Next(tmpdeck.Count);
+                var tmpnum = Rnd.Next(tmpdeck.Count);
                 newdeck.Add(tmpdeck.ElementAt(tmpnum).Key, tmpdeck.ElementAt(tmpnum).Value);
                 tmpdeck.Remove(tmpdeck.ElementAt(tmpnum).Key);
             }
@@ -99,7 +98,7 @@ namespace unlightvbe_kai_core
             for (int i = 0; i < PlayerDatas.Length; i++)
             {
                 var player = PlayerDatas[i];
-                foreach (var sub in player.Player.Decks[player.DeckIndex].Deck_Subs)
+                foreach (var sub in player.Player.Deck.Deck_Subs)
                 {
                     foreach (var card in sub.eventCards)
                     {
@@ -121,8 +120,6 @@ namespace unlightvbe_kai_core
         /// </summary>
         private void EvnetCardComplement()
         {
-            Random rnd = new(DateTime.Now.Millisecond);
-
             for (int n = 0; n < PlayerDatas.Length; n++)
             {
                 CardDeckType cardDeckType = GetCardDeckType((UserPlayerType)n, ActionCardLocation.Deck);
@@ -131,7 +128,7 @@ namespace unlightvbe_kai_core
                     for (int i = CardDecks[(int)cardDeckType].Count; i < TurnMaxNum; i++)
                     {
                         int tmpnum = GetCardIndex(cardDeckType);
-                        Card tmpcard = GetDefaultEventCard(rnd.Next(3));
+                        Card tmpcard = GetDefaultEventCard(Rnd.Next(3));
                         tmpcard.Number = tmpnum;
                         tmpcard.Owner = ActionCardOwner.System;
                         tmpcard.Location = ActionCardLocation.Deck;
@@ -229,6 +226,210 @@ namespace unlightvbe_kai_core
                 },
                 _ => throw new NotImplementedException(),
             };
+        }
+
+        /// <summary>
+        /// 取得玩家卡牌之類型總數
+        /// </summary>
+        /// <param name="player">玩家</param>
+        /// <param name="location">卡牌位置</param>
+        /// <returns>各類型對應總數集合</returns>
+        private Dictionary<ActionCardType, int> GetCardTotalNumber(UserPlayerType player, ActionCardLocation location)
+        {
+            var result = new Dictionary<ActionCardType, int>();
+
+            foreach (var card in CardDecks[(int)GetCardDeckType(player, location)])
+            {
+                if (result.ContainsKey(card.Value.UpperType))
+                {
+                    result[card.Value.UpperType] += card.Value.UpperNum;
+                }
+                else
+                {
+                    result.Add(card.Value.UpperType, card.Value.UpperNum);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 取得玩家計算後總骰數
+        /// </summary>
+        /// <param name="player">玩家</param>
+        /// <param name="phase">判斷階段</param>
+        /// <param name="distance">判斷距離</param>
+        /// <returns></returns>
+        private int GetPlayerDiceTotalNumber(UserPlayerType player, PhaseStartType phase, PlayerDistanceType distance)
+        {
+            var result = 0;
+            var cardtotal = GetCardTotalNumber(player, ActionCardLocation.Play);
+            int tmptotalnum;
+
+            switch (phase)
+            {
+                case PhaseStartType.Attack:
+                    ActionCardType ATKcardType = distance == PlayerDistanceType.Close ? ActionCardType.ATK_Sword : ActionCardType.ATK_Gun;
+
+                    if (cardtotal.TryGetValue(ATKcardType, out tmptotalnum))
+                    {
+                        result += tmptotalnum;
+                        result += PlayerDatas[(int)player].CurrentCharacter.Character.ATK;
+                    }
+
+                    break;
+                case PhaseStartType.Defense:
+                    if (cardtotal.TryGetValue(ActionCardType.DEF, out tmptotalnum))
+                    {
+                        result += tmptotalnum;
+                    }
+
+                    result += PlayerDatas[(int)player].CurrentCharacter.Character.DEF;
+
+                    break;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 更新玩家總骰數資料
+        /// </summary>
+        /// <param name="player">玩家</param>
+        /// <param name="phase">判斷階段</param>
+        private void UpdatePlayerDiceTotalNumber(UserPlayerType player, PhaseStartType phase)
+        {
+            PlayerDatas[(int)player].DiceTotal = GetPlayerDiceTotalNumber(player, phase, PlayerDistance);
+
+            UserPlayerType playerType_Opponent = player == UserPlayerType.Player1 ? UserPlayerType.Player2 : UserPlayerType.Player1;
+            PhaseStartType phaseType_Opponent = phase == PhaseStartType.Attack ? PhaseStartType.Defense : PhaseStartType.Attack;
+
+            PlayerDatas[(int)playerType_Opponent].DiceTotal = GetPlayerDiceTotalNumber(playerType_Opponent, phaseType_Opponent, PlayerDistance);
+        }
+
+        /// <summary>
+        /// 場上牌收牌
+        /// </summary>
+        private void CollectPlayingCardToGraveyard()
+        {
+            int[] collectTotal = new int[2];
+            int currentPlayerFlag = 0;
+
+            foreach (var player in System.Enum.GetValues<UserPlayerType>())
+            {
+                var cardtype = GetCardDeckType(player, ActionCardLocation.Play);
+                foreach (var card in CardDecks[(int)cardtype])
+                {
+                    if (card.Value.GetType().Equals(typeof(EventCard)))
+                    {
+                        card.Value.Location = ActionCardLocation.Fold;
+                        card.Value.Owner = ActionCardOwner.System;
+
+                        DeckCardMove(card.Value, cardtype, CardDeckType.Fold);
+                    }
+                    else
+                    {
+                        card.Value.Location = ActionCardLocation.Graveyard;
+                        card.Value.Owner = ActionCardOwner.System;
+
+                        DeckCardMove(card.Value, cardtype, CardDeckType.Graveyard);
+                    }
+                    collectTotal[currentPlayerFlag]++;
+                }
+                currentPlayerFlag++;
+            }
+
+            MultiUIAdapter.UpdateDataMulti(UpdateDataMultiType.PlayedCardCollectCount, UserPlayerType.Player1, collectTotal[0], collectTotal[1]);
+        }
+
+        /// <summary>
+        /// 擲骰動作執行
+        /// </summary>
+        /// <param name="diceTotal">總骰數</param>
+        /// <returns>擲骰有效數</returns>
+        private int DiceAction(int diceTotal)
+        {
+            int result = 0;
+
+            for (int j = 0; j < diceTotal; j++)
+            {
+                result += Convert.ToInt32(Dice.Roll());
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 雙方玩家角色存活確認
+        /// </summary>
+        /// <returns>是否通過存活確認</returns>
+        private bool PlayerCharacterHPCheck()
+        {
+            foreach (var player in PlayerDatas)
+            {
+                if (player.CurrentCharacter.CurrentHP <= 0)
+                {
+                    bool isReplaceable = false;
+                    foreach (var character in player.CharacterDatas)
+                    {
+                        if (character.CurrentHP > 0)
+                        {
+                            isReplaceable = true;
+                            break;
+                        }
+                    }
+                    if (isReplaceable)
+                    {
+                        MultiUIAdapter.ChangeCharacterAction(player.PlayerType);
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 角色傷害執行
+        /// </summary>
+        /// <param name="player">玩家</param>
+        /// <param name="characterVBEID">角色VBEID</param>
+        /// <param name="damageNumber">傷害數</param>
+        private void CharacterHPDamage(UserPlayerType player, string characterVBEID, int damageNumber)
+        {
+            var characterData = PlayerDatas[(int)player].GetCharacterData(characterVBEID);
+            if (characterData == null) throw new Exception("characterVBEID null reference");
+
+            int origHP = characterData.CurrentHP;
+
+            characterData.CurrentHP -= damageNumber;
+            if (characterData.CurrentHP < 0) characterData.CurrentHP = 0;
+
+            MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPDamage, player, origHP - characterData.CurrentHP, characterVBEID);
+        }
+
+        /// <summary>
+        /// 角色回復執行
+        /// </summary>
+        /// <param name="player">玩家</param>
+        /// <param name="characterVBEID">角色VBEID</param>
+        /// <param name="healNumber">回復數</param>
+        private void CharacterHPHeal(UserPlayerType player, string characterVBEID, int healNumber)
+        {
+            var characterData = PlayerDatas[(int)player].GetCharacterData(characterVBEID);
+            if (characterData == null) throw new Exception("characterVBEID null reference");
+
+            if (characterData.CurrentHP < characterData.Character.HP)
+            {
+                int origHP = characterData.CurrentHP;
+
+                characterData.CurrentHP += healNumber;
+                if (characterData.CurrentHP > characterData.Character.HP) characterData.CurrentHP = characterData.Character.HP;
+
+                MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPHeal, player, characterData.CurrentHP - origHP, characterVBEID);
+            }
         }
     }
 }

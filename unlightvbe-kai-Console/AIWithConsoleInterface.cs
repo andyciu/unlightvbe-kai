@@ -4,24 +4,34 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Models;
 using unlightvbe_kai_core.Models.IUserInterface;
 
 namespace unlightvbe_kai_console
 {
-    internal class AIWithConsoleInterface : ConsoleInterface
+    public class AIWithConsoleInterface : ConsoleInterface
     {
-        public AIWithConsoleInterface(string instanceName) : base(instanceName) { }
+        public AIWithConsoleInterface(string instanceName, Player selfPlayer, Player opponentPlayer) :
+            base(instanceName, selfPlayer, opponentPlayer)
+        { }
 
         public override ReadActionModel ReadAction()
         {
-            Thread.Sleep(1000);
-            return new ReadActionModel()
+            if (PhaseStartType == PhaseStartType.Move)
             {
-                Type = UserActionType.OKButtonClick
-            };
+                Thread.Sleep(1000);
+                return new ReadActionModel()
+                {
+                    Type = UserActionType.OKButtonClick
+                };
+            }
+            else
+            {
+                return base.ReadAction();
+            }
         }
 
-        internal override void SetConsoleColor()
+        protected override void SetConsoleColor()
         {
             Console.ResetColor();
             Console.ForegroundColor = ConsoleColor.Yellow;
