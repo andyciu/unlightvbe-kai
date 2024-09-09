@@ -1,5 +1,6 @@
 ﻿using unlightvbe_kai_core;
 using unlightvbe_kai_core.Models;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace unlightvbe_kai_console
 {
@@ -8,6 +9,9 @@ namespace unlightvbe_kai_console
         static void Main(string[] args)
         {
             Console.WriteLine("Hello, World!");
+
+            //Test2();
+            //return;
 
             //Sample Data
             SampleData data = new();
@@ -46,6 +50,21 @@ namespace unlightvbe_kai_console
                         break;
                 }
             }
+        }
+
+        private static void Test2()
+        {
+            //Sample Data
+            SampleData data = new();
+            var player1 = data.GetPlayer(1);
+
+            Test2_2(player1);
+        }
+
+        private static void Test2_2(Player player)
+        {
+            var result = player.Deck.Deck_Subs[0].character.ActiveSkills[0].Function.Invoke(new());
+            Console.WriteLine(result?[0].Type.ToString());
         }
     }
 }

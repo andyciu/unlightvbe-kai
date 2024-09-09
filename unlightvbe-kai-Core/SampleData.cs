@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using unlightvbe_kai_core.Enum;
@@ -17,6 +18,25 @@ namespace unlightvbe_kai_core
         public static readonly Random Rnd = new Random();
         public SampleData()
         {
+            Skill<ActiveSkill> skill1 = new(TmpActiveSkill, "VBEID001")
+            {
+                Distance = new()
+                        {
+                            PlayerDistanceType.Middle,
+                            PlayerDistanceType.Close,
+                            PlayerDistanceType.Long,
+                        },
+                Phase = PhaseType.Attack,
+                StageNumber = new() { 1, 2, 3 },
+                Cards = new List<SkillCardConditionModel> { new()
+                {
+                    Scope = SkillCardConditionScopeType.Above,
+                    CardType = ActionCardType.ATK_Sword,
+                    Number = 1
+                } },
+                Name = "TmpActiveSkill"
+            };
+
             Characters.Add(new()
             {
                 Name = "Ria",
@@ -27,6 +47,7 @@ namespace unlightvbe_kai_core
                 EventColour = "357000",
                 LevelMain = "LV",
                 LevelNum = 5,
+                ActiveSkills = new() { skill1 }
             });
             Characters.Add(new()
             {
@@ -38,6 +59,7 @@ namespace unlightvbe_kai_core
                 EventColour = "325000",
                 LevelMain = "LV",
                 LevelNum = 5,
+                ActiveSkills = new() { skill1 }
             });
 
             for (int i = 0; i < 2; i++)
@@ -148,6 +170,18 @@ namespace unlightvbe_kai_core
         public Character GetCharacter(string VBEID)
         {
             return Characters.Find(x => x.VBEID == VBEID) ?? Characters[0];
+        }
+
+        public List<SkillCommandModel> TmpActiveSkill(ActiveSkillArgsModel args)
+        {
+            return new()
+            {
+                new SkillCommandModel()
+                {
+                    Type = SkillCommandType.AtkingLineLight,
+                    Message = new string[2] { "1", "2" }
+                }
+            };
         }
     }
 }

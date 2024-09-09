@@ -36,7 +36,7 @@ namespace unlightvbe_kai_core
         /// </summary>
         private void GraveyardDeckReUse()
         {
-            foreach (var card in CardDecks[(int)CardDeckType.Graveyard])
+            foreach (var card in CardDecks[CardDeckType.Graveyard])
             {
                 card.Value.Location = ActionCardLocation.Deck;
                 card.Value.Owner = ActionCardOwner.System;
@@ -53,8 +53,8 @@ namespace unlightvbe_kai_core
         /// <param name="destType">目標集合</param>
         private void DeckCardMove(Card card, CardDeckType origType, CardDeckType destType)
         {
-            CardDecks[(int)destType].Add(card.Number, card);
-            CardDecks[(int)origType].Remove(card.Number);
+            CardDecks[destType].Add(card.Number, card);
+            CardDecks[origType].Remove(card.Number);
 
             CardDeckIndex[card.Number] = destType;
         }
@@ -86,7 +86,7 @@ namespace unlightvbe_kai_core
                 card.Owner = ActionCardOwner.System;
                 card.Location = ActionCardLocation.Deck;
 
-                CardDecks[(int)CardDeckType.Deck].Add(tmpnum, card);
+                CardDecks[CardDeckType.Deck].Add(tmpnum, card);
             }
         }
 
@@ -109,7 +109,7 @@ namespace unlightvbe_kai_core
                         card.Owner = ActionCardOwner.System;
                         card.Location = ActionCardLocation.Deck;
 
-                        CardDecks[(int)cardDeckType].Add(tmpnum, card);
+                        CardDecks[cardDeckType].Add(tmpnum, card);
                     }
                 }
             }
@@ -123,16 +123,16 @@ namespace unlightvbe_kai_core
             for (int n = 0; n < PlayerDatas.Length; n++)
             {
                 CardDeckType cardDeckType = GetCardDeckType((UserPlayerType)n, ActionCardLocation.Deck);
-                if (CardDecks[(int)cardDeckType].Count < TurnMaxNum)
+                if (CardDecks[cardDeckType].Count < TurnMaxNum)
                 {
-                    for (int i = CardDecks[(int)cardDeckType].Count; i < TurnMaxNum; i++)
+                    for (int i = CardDecks[cardDeckType].Count; i < TurnMaxNum; i++)
                     {
                         int tmpnum = GetCardIndex(cardDeckType);
                         Card tmpcard = GetDefaultEventCard(Rnd.Next(3));
                         tmpcard.Number = tmpnum;
                         tmpcard.Owner = ActionCardOwner.System;
                         tmpcard.Location = ActionCardLocation.Deck;
-                        CardDecks[(int)cardDeckType].Add(tmpnum, tmpcard);
+                        CardDecks[cardDeckType].Add(tmpnum, tmpcard);
                     }
                 }
             }
@@ -238,7 +238,7 @@ namespace unlightvbe_kai_core
         {
             var result = new Dictionary<ActionCardType, int>();
 
-            foreach (var card in CardDecks[(int)GetCardDeckType(player, location)])
+            foreach (var card in CardDecks[GetCardDeckType(player, location)])
             {
                 if (result.ContainsKey(card.Value.UpperType))
                 {
@@ -260,7 +260,7 @@ namespace unlightvbe_kai_core
         /// <param name="phase">判斷階段</param>
         /// <param name="distance">判斷距離</param>
         /// <returns></returns>
-        private int GetPlayerDiceTotalNumber(UserPlayerType player, PhaseStartType phase, PlayerDistanceType distance)
+        private int GetPlayerDiceTotalNumber(UserPlayerType player, PhaseType phase, PlayerDistanceType distance)
         {
             var result = 0;
             var cardtotal = GetCardTotalNumber(player, ActionCardLocation.Play);
@@ -268,7 +268,7 @@ namespace unlightvbe_kai_core
 
             switch (phase)
             {
-                case PhaseStartType.Attack:
+                case PhaseType.Attack:
                     ActionCardType ATKcardType = distance == PlayerDistanceType.Close ? ActionCardType.ATK_Sword : ActionCardType.ATK_Gun;
 
                     if (cardtotal.TryGetValue(ATKcardType, out tmptotalnum))
@@ -278,7 +278,7 @@ namespace unlightvbe_kai_core
                     }
 
                     break;
-                case PhaseStartType.Defense:
+                case PhaseType.Defense:
                     if (cardtotal.TryGetValue(ActionCardType.DEF, out tmptotalnum))
                     {
                         result += tmptotalnum;
@@ -297,12 +297,12 @@ namespace unlightvbe_kai_core
         /// </summary>
         /// <param name="player">玩家</param>
         /// <param name="phase">判斷階段</param>
-        private void UpdatePlayerDiceTotalNumber(UserPlayerType player, PhaseStartType phase)
+        private void UpdatePlayerDiceTotalNumber(UserPlayerType player, PhaseType phase)
         {
             PlayerDatas[(int)player].DiceTotal = GetPlayerDiceTotalNumber(player, phase, PlayerDistance);
 
             UserPlayerType playerType_Opponent = player == UserPlayerType.Player1 ? UserPlayerType.Player2 : UserPlayerType.Player1;
-            PhaseStartType phaseType_Opponent = phase == PhaseStartType.Attack ? PhaseStartType.Defense : PhaseStartType.Attack;
+            PhaseType phaseType_Opponent = phase == PhaseType.Attack ? PhaseType.Defense : PhaseType.Attack;
 
             PlayerDatas[(int)playerType_Opponent].DiceTotal = GetPlayerDiceTotalNumber(playerType_Opponent, phaseType_Opponent, PlayerDistance);
         }
@@ -318,7 +318,7 @@ namespace unlightvbe_kai_core
             foreach (var player in System.Enum.GetValues<UserPlayerType>())
             {
                 var cardtype = GetCardDeckType(player, ActionCardLocation.Play);
-                foreach (var card in CardDecks[(int)cardtype])
+                foreach (var card in CardDecks[cardtype])
                 {
                     if (card.Value.GetType().Equals(typeof(EventCard)))
                     {

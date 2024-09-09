@@ -9,6 +9,6 @@ namespace unlightvbe_kai_core.Models.IUserInterface
 {
     public class PhaseStartModel
     {
-        public PhaseStartType Type { get; set; }
+        public PhaseType Type { get; set; }
     }
 }

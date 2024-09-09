@@ -234,8 +234,8 @@ namespace unlightvbe_kai_core
 
         public void MovePhaseReadAction()
         {
-            Task task1 = Task.Run(() => { ReadActionTask(UserPlayerType.Player1, PhaseStartType.Move); });
-            Task task2 = Task.Run(() => { ReadActionTask(UserPlayerType.Player2, PhaseStartType.Move); });
+            Task task1 = Task.Run(() => { ReadActionTask(UserPlayerType.Player1, PhaseType.Move); });
+            Task task2 = Task.Run(() => { ReadActionTask(UserPlayerType.Player2, PhaseType.Move); });
             Task.WhenAll(task1, task2).Wait();
         }
 
@@ -252,21 +252,21 @@ namespace unlightvbe_kai_core
             {
                 UserInterfaces[(int)UserPlayerType.Player1].PhaseStart(new()
                 {
-                    Type = attackPlayer == UserPlayerType.Player1 ? PhaseStartType.Attack : PhaseStartType.Defense,
+                    Type = attackPlayer == UserPlayerType.Player1 ? PhaseType.Attack : PhaseType.Defense,
                 });
             });
             Task task2 = Task.Run(() =>
             {
                 UserInterfaces[(int)UserPlayerType.Player2].PhaseStart(new()
                 {
-                    Type = attackPlayer == UserPlayerType.Player2 ? PhaseStartType.Attack : PhaseStartType.Defense
+                    Type = attackPlayer == UserPlayerType.Player2 ? PhaseType.Attack : PhaseType.Defense
                 });
             });
 
             Task.WhenAll(task1, task2).Wait();
         }
 
-        public void AttackWithDefensePhaseReadAction(UserPlayerType player, PhaseStartType phaseType)
+        public void AttackWithDefensePhaseReadAction(UserPlayerType player, PhaseType phaseType)
         {
             Task.Run(() => { ReadActionTask(player, phaseType); }).Wait();
         }
@@ -317,7 +317,7 @@ namespace unlightvbe_kai_core
             Task.WhenAll(task1, task2).Wait();
         }
 
-        private void ReadActionTask(UserPlayerType player, PhaseStartType phaseType)
+        private void ReadActionTask(UserPlayerType player, PhaseType phaseType)
         {
             UserInterfaces[(int)player].UpdateData(new()
             {
@@ -339,7 +339,7 @@ namespace unlightvbe_kai_core
                         {
                             result = method.Invoke(UserActionProxy, new object[] { player, tmpAction.Value, phaseType });
                         }
-                        else if (phaseType == PhaseStartType.Move || tmpAction.Type == UserActionType.OKButtonClick)
+                        else if (phaseType == PhaseType.Move || tmpAction.Type == UserActionType.OKButtonClick)
                         {
                             result = method.Invoke(UserActionProxy, new object[] { player });
                         }
@@ -373,7 +373,7 @@ namespace unlightvbe_kai_core
                             });
                             Task.WhenAll(task1, task2).Wait();
 
-                            if (phaseType == PhaseStartType.Attack || phaseType == PhaseStartType.Defense)
+                            if (phaseType == PhaseType.Attack || phaseType == PhaseType.Defense)
                             {
                                 UpdateDiceTotalNumberRelative(player, OpponentPlayer,
                                     UserActionProxy.GetPlayerDiceTotalNumber(player), UserActionProxy.GetPlayerDiceTotalNumber(OpponentPlayer));
@@ -402,7 +402,7 @@ namespace unlightvbe_kai_core
 
                         if (location != UserActionCardReverseLocation.None)
                         {
-                            if (phaseType == PhaseStartType.Attack || phaseType == PhaseStartType.Defense)
+                            if (phaseType == PhaseType.Attack || phaseType == PhaseType.Defense)
                             {
                                 UpdateDiceTotalNumberRelative(player, OpponentPlayer,
                                     UserActionProxy.GetPlayerDiceTotalNumber(player), UserActionProxy.GetPlayerDiceTotalNumber(OpponentPlayer));

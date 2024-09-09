@@ -26,5 +26,16 @@ namespace unlightvbe_kai_core.Enum
         {
             return player == UserPlayerType.Player1 ? UserPlayerType.Player2 : UserPlayerType.Player1;
         }
+
+        /// <summary>
+        /// 轉換至相對狀態
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="currentPlayer">目前玩家方</param>
+        /// <returns></returns>
+        public static UserPlayerRelativeType ToRelative(this UserPlayerType player, UserPlayerType currentPlayer)
+        {
+            return player == currentPlayer ? UserPlayerRelativeType.Self : UserPlayerRelativeType.Opponent;
+        }
     }
 }

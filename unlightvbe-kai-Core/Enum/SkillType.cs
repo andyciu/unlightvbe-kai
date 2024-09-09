@@ -6,13 +6,12 @@ using System.Threading.Tasks;
 
 namespace unlightvbe_kai_core.Enum
 {
-    public enum PhaseStartType
+    public enum SkillType
     {
         None = 0,
-        Draw,
-        Move,
-        Attack,
-        Defense,
-        TurnEnd
+        ActiveSkill,
+        PassiveSkill,
+        Buff,
+        CharacterActualStatus
     }
 }

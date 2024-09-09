@@ -27,9 +27,9 @@ namespace unlightvbe_kai_core
         /// <summary>
         /// 卡牌集合
         /// </summary>
-        protected List<Dictionary<int, Card>> CardDecks { get; set; }
+        protected Dictionary<CardDeckType, Dictionary<int, Card>> CardDecks { get; set; }
         /// <summary>
-        /// 卡牌集合索引
+        /// 卡牌集合索引(卡牌編號->對應集合)
         /// </summary>
         protected Dictionary<int, CardDeckType> CardDeckIndex { get; set; }
         /// <summary>
@@ -40,6 +40,14 @@ namespace unlightvbe_kai_core
         /// 對戰最大回合數
         /// </summary>
         public int TurnMaxNum { get; set; } = 18;
+        /// <summary>
+        /// 攻擊/防禦模式雙方擲骰後正骰數量
+        /// </summary>
+        private int[] DiceTrue = new int[2];
+        /// <summary>
+        /// 攻擊/防禦模式擲骰後正骰數量差(攻擊正面骰減去防禦正面骰)
+        /// </summary>
+        private int DiceTrueTotal;
         /// <summary>
         /// 對戰模式
         /// </summary>
@@ -53,10 +61,22 @@ namespace unlightvbe_kai_core
         /// </summary>
         private UserPlayerType AttackPhaseFirst;
         /// <summary>
+        /// 當前回合階段
+        /// </summary>
+        private PhaseType[] Phase = new PhaseType[2];
+        /// <summary>
         /// 對戰雙方勝負結果
         /// </summary>
         public ShowJudgmentType[] PlayerJudgment { get; private set; } = { ShowJudgmentType.None, ShowJudgmentType.None };
-        public static readonly Random Rnd = new(DateTime.Now.Millisecond);
+        /// <summary>
+        /// 技能執行器
+        /// </summary>
+        protected SkillAdapterClass SkillAdapter { get; set; }
+        /// <summary>
+        /// 技能執行指令解釋器
+        /// </summary>
+        protected SkillCommandProxyClass SkillCommandProxy { get; set; }
+        private static readonly Random Rnd = new(DateTime.Now.Millisecond);
 
 
         public BattleSystem(Player player1, Player player2)
@@ -77,6 +97,12 @@ namespace unlightvbe_kai_core
                 {
                     throw new ArgumentException("PlayerVersusMode No Match.");
                 }
+
+                //設定技能執行介面
+                SkillAdapter = new SkillAdapterClass(this);
+                SkillCommandProxy = new SkillCommandProxyClass(this);
+                SkillAdapter.SetSkillCommandProxy(SkillCommandProxy);
+                SkillCommandProxy.SetSkillAdapter(SkillAdapter);
             }
             catch (Exception)
             {
@@ -103,6 +129,7 @@ namespace unlightvbe_kai_core
                 if (!IsJudgmentMode) DrawPhase(); else break;
                 if (!IsJudgmentMode) MovePhase(); else break;
                 if (!IsJudgmentMode) AttackWithDefensePhase(); else break;
+                if (!IsJudgmentMode) TurnEndPhase(); else break;
             }
             JudgmentPhase();
             IsFinish = true;
@@ -116,20 +143,20 @@ namespace unlightvbe_kai_core
         private void InitialData()
         {
             //CardDeck
-            CardDecks = new List<Dictionary<int, Card>>();
+            CardDecks = new Dictionary<CardDeckType, Dictionary<int, Card>>();
             CardDeckIndex = new Dictionary<int, CardDeckType>();
 
             foreach (var type in System.Enum.GetValues<CardDeckType>())
             {
-                CardDecks.Add(new Dictionary<int, Card>());
+                CardDecks.Add(type, new Dictionary<int, Card>());
             }
 
             ImportActionCardToDeck();
             ImportEventCardToDeck();
 
-            CardDecks[(int)CardDeckType.Deck] = ShuffleDeck(CardDecks[(int)CardDeckType.Deck]);
-            CardDecks[(int)CardDeckType.Event_P1] = ShuffleDeck(CardDecks[(int)CardDeckType.Event_P1]);
-            CardDecks[(int)CardDeckType.Event_P2] = ShuffleDeck(CardDecks[(int)CardDeckType.Event_P2]);
+            CardDecks[CardDeckType.Deck] = ShuffleDeck(CardDecks[CardDeckType.Deck]);
+            CardDecks[CardDeckType.Event_P1] = ShuffleDeck(CardDecks[CardDeckType.Event_P1]);
+            CardDecks[CardDeckType.Event_P2] = ShuffleDeck(CardDecks[CardDeckType.Event_P2]);
 
             EvnetCardComplement();
 
@@ -161,12 +188,15 @@ namespace unlightvbe_kai_core
         /// </summary>
         private void DrawPhase()
         {
-            int waitToDeal_P1 = PlayerDatas[(int)UserPlayerType.Player1].HoldMaxCount - CardDecks[(int)CardDeckType.Hold_P1].Count;
-            int waitToDeal_P2 = PlayerDatas[(int)UserPlayerType.Player2].HoldMaxCount - CardDecks[(int)CardDeckType.Hold_P2].Count;
+            int waitToDeal_P1 = PlayerDatas[(int)UserPlayerType.Player1].HoldMaxCount - CardDecks[CardDeckType.Hold_P1].Count;
+            int waitToDeal_P2 = PlayerDatas[(int)UserPlayerType.Player2].HoldMaxCount - CardDecks[CardDeckType.Hold_P2].Count;
             List<Card> dealCards_p1 = new List<Card>();
             List<Card> dealCards_p2 = new List<Card>();
             ActionCardOwner dealside = ActionCardOwner.Player1; //目前發牌方
             EventCard[] eventCards = new EventCard[2];
+
+            Phase[(int)UserPlayerType.Player1] = PhaseType.Draw;
+            Phase[(int)UserPlayerType.Player2] = PhaseType.Draw;
 
             //回合數增加
             TurnNum += 1;
@@ -178,15 +208,8 @@ namespace unlightvbe_kai_core
 
             MultiUIAdapter.PhaseStart(new()
             {
-                Type = PhaseStartType.Draw
+                Type = PhaseType.Draw
             });
-
-            //若牌堆集合卡牌數量不足時進行洗牌
-            if (CardDecks[(int)CardDeckType.Deck].Count < waitToDeal_P1 + waitToDeal_P2)
-            {
-                GraveyardDeckReUse();
-                CardDecks[(int)CardDeckType.Deck] = ShuffleDeck(CardDecks[(int)CardDeckType.Deck]);
-            }
 
             //同步牌堆數量
             MultiUIAdapter.UpdateData_All(new()
@@ -237,7 +260,7 @@ namespace unlightvbe_kai_core
                 if (n == 0) dealside = ActionCardOwner.Player1;
                 else dealside = ActionCardOwner.Player2;
 
-                var tmpcard = CardDecks[(int)GetCardDeckType(dealside, ActionCardLocation.Deck)].ElementAt(0).Value;
+                var tmpcard = CardDecks[GetCardDeckType(dealside, ActionCardLocation.Deck)].ElementAt(0).Value;
                 tmpcard.Location = ActionCardLocation.Hold;
                 tmpcard.Owner = dealside;
 
@@ -260,6 +283,9 @@ namespace unlightvbe_kai_core
         /// </summary>
         private void MovePhase()
         {
+            Phase[(int)UserPlayerType.Player1] = PhaseType.Move;
+            Phase[(int)UserPlayerType.Player2] = PhaseType.Move;
+
             foreach (var player in PlayerDatas)
             {
                 player.MoveBarSelect = MoveBarSelectType.None;
@@ -268,8 +294,10 @@ namespace unlightvbe_kai_core
 
             MultiUIAdapter.PhaseStart(new()
             {
-                Type = PhaseStartType.Move
+                Type = PhaseType.Move
             });
+
+            SkillAdapter.StageStart(1, UserPlayerType.Player1, false, true);
 
             MultiUIAdapter.MovePhaseReadAction();
 
@@ -338,8 +366,8 @@ namespace unlightvbe_kai_core
             MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.AttackPhaseFirstPlayerType, AttackPhaseFirst, 0, null);
 
             MultiUIAdapter.OpenOppenentPlayingCard(
-                CardDecks[(int)CardDeckType.Play_P1].Select(x => x.Value).ToList(),
-                CardDecks[(int)CardDeckType.Play_P2].Select(x => x.Value).ToList());
+                CardDecks[CardDeckType.Play_P1].Select(x => x.Value).ToList(),
+                CardDecks[CardDeckType.Play_P2].Select(x => x.Value).ToList());
 
             //收牌
             CollectPlayingCardToGraveyard();
@@ -366,8 +394,6 @@ namespace unlightvbe_kai_core
         private void AttackWithDefensePhase()
         {
             UserPlayerType attackPlyaer, defensePlayer;
-            int[] diceTrue;
-            int diceTrueTotal;
 
             for (int i = 0; i < 2; i++)
             {
@@ -382,6 +408,9 @@ namespace unlightvbe_kai_core
                     defensePlayer = AttackPhaseFirst;
                 }
 
+                Phase[(int)attackPlyaer] = PhaseType.Attack;
+                Phase[(int)defensePlayer] = PhaseType.Defense;
+
                 foreach (var player in PlayerDatas)
                 {
                     player.DiceTotal = 0;
@@ -391,18 +420,18 @@ namespace unlightvbe_kai_core
                 MultiUIAdapter.PhaseStartAttackWithDefense(attackPlyaer);
 
                 //Attack Action
-                MultiUIAdapter.AttackWithDefensePhaseReadAction(attackPlyaer, PhaseStartType.Attack);
+                MultiUIAdapter.AttackWithDefensePhaseReadAction(attackPlyaer, PhaseType.Attack);
                 MultiUIAdapter.OpenOppenentPlayingCard(defensePlayer,
-                    CardDecks[(int)GetCardDeckType(attackPlyaer, ActionCardLocation.Play)].Select(x => x.Value).ToList());
+                    CardDecks[GetCardDeckType(attackPlyaer, ActionCardLocation.Play)].Select(x => x.Value).ToList());
 
                 //Defense Action
-                MultiUIAdapter.AttackWithDefensePhaseReadAction(defensePlayer, PhaseStartType.Defense);
+                MultiUIAdapter.AttackWithDefensePhaseReadAction(defensePlayer, PhaseType.Defense);
                 MultiUIAdapter.OpenOppenentPlayingCard(attackPlyaer,
-                    CardDecks[(int)GetCardDeckType(defensePlayer, ActionCardLocation.Play)].Select(x => x.Value).ToList());
+                    CardDecks[GetCardDeckType(defensePlayer, ActionCardLocation.Play)].Select(x => x.Value).ToList());
 
                 //骰數再計算
-                UpdatePlayerDiceTotalNumber(attackPlyaer, PhaseStartType.Attack);
-                UpdatePlayerDiceTotalNumber(defensePlayer, PhaseStartType.Defense);
+                UpdatePlayerDiceTotalNumber(attackPlyaer, PhaseType.Attack);
+                UpdatePlayerDiceTotalNumber(defensePlayer, PhaseType.Defense);
                 MultiUIAdapter.UpdateDiceTotalNumberRelative(attackPlyaer, defensePlayer,
                     PlayerDatas[(int)attackPlyaer].DiceTotal, PlayerDatas[(int)defensePlayer].DiceTotal);
 
@@ -420,20 +449,20 @@ namespace unlightvbe_kai_core
                 CollectPlayingCardToGraveyard();
 
                 //擲骰
-                diceTrue = new int[2];
+                DiceTrue = new int[2];
                 foreach (var player in PlayerDatas)
                 {
-                    diceTrue[(int)player.PlayerType] = DiceAction(player.DiceTotal);
+                    DiceTrue[(int)player.PlayerType] = DiceAction(player.DiceTotal);
                 }
 
-                MultiUIAdapter.UpdateDiceTrueNumber(diceTrue[(int)UserPlayerType.Player1], diceTrue[(int)UserPlayerType.Player2]);
+                MultiUIAdapter.UpdateDiceTrueNumber(DiceTrue[(int)UserPlayerType.Player1], DiceTrue[(int)UserPlayerType.Player2]);
 
                 //傷害計算
-                diceTrueTotal = diceTrue[(int)attackPlyaer] - diceTrue[(int)defensePlayer];
+                DiceTrueTotal = DiceTrue[(int)attackPlyaer] - DiceTrue[(int)defensePlayer];
 
-                if (diceTrueTotal > 0)
+                if (DiceTrueTotal > 0)
                 {
-                    CharacterHPDamage(defensePlayer, PlayerDatas[(int)defensePlayer].CurrentCharacter.Character.VBEID, diceTrueTotal);
+                    CharacterHPDamage(defensePlayer, PlayerDatas[(int)defensePlayer].CurrentCharacter.Character.VBEID, DiceTrueTotal);
                 }
 
                 //角色存活檢查
@@ -478,6 +507,31 @@ namespace unlightvbe_kai_core
                 PlayerJudgment[(int)UserPlayerType.Player2] = ShowJudgmentType.Draw;
             }
             MultiUIAdapter.ShowJudgment(PlayerJudgment[(int)UserPlayerType.Player1], PlayerJudgment[(int)UserPlayerType.Player2]);
+        }
+
+        /// <summary>
+        /// 回合結束階段
+        /// </summary>
+        private void TurnEndPhase()
+        {
+            //角色存活檢查
+            if (!PlayerCharacterHPCheck())
+            {
+                IsJudgmentMode = true;
+                return;
+            }
+
+            int waitToDeal_P1 = PlayerDatas[(int)UserPlayerType.Player1].HoldMaxCount - CardDecks[CardDeckType.Hold_P1].Count;
+            int waitToDeal_P2 = PlayerDatas[(int)UserPlayerType.Player2].HoldMaxCount - CardDecks[CardDeckType.Hold_P2].Count;
+
+            //若牌堆集合卡牌數量不足時進行洗牌
+            if (CardDecks[CardDeckType.Deck].Count < waitToDeal_P1 + waitToDeal_P2)
+            {
+                GraveyardDeckReUse();
+                CardDecks[CardDeckType.Deck] = ShuffleDeck(CardDecks[CardDeckType.Deck]);
+            }
+
+            MultiUIAdapter.ShowBattleMessage(string.Format("Turn {0} end.", TurnNum));
         }
     }
 }

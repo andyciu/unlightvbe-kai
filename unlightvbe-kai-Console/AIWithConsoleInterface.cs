@@ -17,7 +17,7 @@ namespace unlightvbe_kai_console
 
         public override ReadActionModel ReadAction()
         {
-            if (PhaseStartType == PhaseStartType.Move)
+            if (PhaseType == PhaseType.Move)
             {
                 Thread.Sleep(1000);
                 return new ReadActionModel()

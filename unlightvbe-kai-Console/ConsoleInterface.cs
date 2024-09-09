@@ -84,7 +84,7 @@ namespace unlightvbe_kai_console
         /// <summary>
         /// 當前回合階段
         /// </summary>
-        protected PhaseStartType PhaseStartType;
+        protected PhaseType PhaseType;
         /// <summary>
         /// 玩家雙方場上距離
         /// </summary>
@@ -288,7 +288,7 @@ namespace unlightvbe_kai_console
                         break;
                     case "SI": //ShowInfo
                         ConsoleWriteLine("Turn=" + TurnNum);
-                        ConsoleWriteLine("Phase=" + PhaseStartType.ToString());
+                        ConsoleWriteLine("Phase=" + PhaseType.ToString());
                         ConsoleWriteLine("Distance=" + PlayerDistance.ToString());
                         ConsoleWriteLine("Deck=" + DeckNum);
                         ConsoleWriteLine("SelfHold=" + HoldCards.Count);
@@ -552,7 +552,7 @@ namespace unlightvbe_kai_console
             ConsoleWriteLine("Test_PhaseStart");
             ConsoleWriteLine(data.Type.ToString());
 
-            PhaseStartType = data.Type;
+            PhaseType = data.Type;
         }
 
         public Task UpdateDataMultiAsync(UpdateDataMultiModel data)

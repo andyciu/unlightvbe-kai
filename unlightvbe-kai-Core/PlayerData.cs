@@ -20,6 +20,9 @@ namespace unlightvbe_kai_core
                 return CharacterDatas[0];
             }
         }
+        /// <summary>
+        /// 目前卡牌最大數量上限
+        /// </summary>
         public int HoldMaxCount { get; set; }
         public IUserInterfaceAsync UserInterface { get; set; }
         public MoveBarSelectType MoveBarSelect { get; set; }

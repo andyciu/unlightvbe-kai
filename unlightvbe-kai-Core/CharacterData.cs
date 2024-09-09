@@ -14,10 +14,18 @@ namespace unlightvbe_kai_core
     {
         public Character Character { get; }
         public int CurrentHP { get; set; }
+        public bool[] ActiveSkillIsActivate { get; set; }
+        public bool[] PassiveSkillIsActivate { get; set; }
+        public int[] ActiveSkillTurnOnCount { get; set; }
+        public int[] PassiveSkillTurnOnCount { get; set; }
         public CharacterData(Character character)
         {
             Character = character;
             CurrentHP = character.HP;
+            ActiveSkillIsActivate = new bool[character.ActiveSkills.Count];
+            PassiveSkillIsActivate = new bool[character.PassiveSkills.Count];
+            ActiveSkillTurnOnCount = new int[character.ActiveSkills.Count];
+            PassiveSkillTurnOnCount = new int[character.PassiveSkills.Count];
         }
     }
 }
