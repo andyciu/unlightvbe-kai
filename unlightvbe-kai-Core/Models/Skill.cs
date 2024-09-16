@@ -21,8 +21,17 @@ namespace unlightvbe_kai_core.Models
         /// 欲使用之執行階段號
         /// </summary>
         public List<int> StageNumber { get; set; } = new();
+        /// <summary>
+        /// 回合階段
+        /// </summary>
         public PhaseType Phase { get; set; }
+        /// <summary>
+        /// 距離
+        /// </summary>
         public List<PlayerDistanceType> Distance { get; set; } = new();
+        /// <summary>
+        /// 卡片條件集合
+        /// </summary>
         public List<SkillCardConditionModel> Cards { get; set; } = new();
         public T Function { get; }
         public Skill(T function, string vbeID)

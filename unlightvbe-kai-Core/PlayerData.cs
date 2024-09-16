@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using unlightvbe_kai_core.Enum;
+﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
+using unlightvbe_kai_core.Models.SkillCommand;
 
 namespace unlightvbe_kai_core
 {
@@ -29,6 +25,15 @@ namespace unlightvbe_kai_core
         public bool IsOKButtonSelect { get; set; }
         public UserPlayerType PlayerType { get; }
         public int DiceTotal { get; set; }
+        /// <summary>
+        /// 執行指令-攻擊/防禦階段系統骰數變化量控制紀錄
+        /// </summary>
+        public Dictionary<UserPlayerRelativeType, Dictionary<SkillType, List<EventTotalDiceChangeRecordModel>>> SC_EventTotalDiceChangeRecord { get; set; } = new();
+
+        /// <summary>
+        /// 執行指令-攻擊/防禦階段系統骰數變化量控制紀錄-是否進入指定模式
+        /// </summary>
+        public bool SC_EventTotalDiceChangeRecordAssignMode { get; set; }
         private readonly Dictionary<string, CharacterData> CharacterVBEIDDict = new();
         public PlayerData(Player player, UserPlayerType playerType)
         {
@@ -41,6 +46,15 @@ namespace unlightvbe_kai_core
                 var newData = new CharacterData(new(deck_Sub.character));
                 CharacterDatas.Add(newData);
                 CharacterVBEIDDict.Add(deck_Sub.character.VBEID, newData);
+            }
+
+            foreach (var userPlayerRelativeType in System.Enum.GetValues<UserPlayerRelativeType>())
+            {
+                SC_EventTotalDiceChangeRecord.Add(userPlayerRelativeType, new());
+                foreach (var skillType in System.Enum.GetValues<SkillType>())
+                {
+                    SC_EventTotalDiceChangeRecord[userPlayerRelativeType].Add(skillType, new());
+                }
             }
         }
 

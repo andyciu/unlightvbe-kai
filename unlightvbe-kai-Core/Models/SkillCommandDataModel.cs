@@ -7,11 +7,11 @@ using unlightvbe_kai_core.Enum;
 
 namespace unlightvbe_kai_core.Models
 {
-    public class SkillCommandDataModel
+    public class SkillCommandDataModel : SkillCommandProxyExecueCommandDataModel
     {
-        public int StageNum { get; set; }
-        public UserPlayerType Player { get; set; }
-        public SkillType SkillType { get; set; }
+        /// <summary>
+        /// 指令引數
+        /// </summary>
         public string[]? Message { get; set; }
     }
 }

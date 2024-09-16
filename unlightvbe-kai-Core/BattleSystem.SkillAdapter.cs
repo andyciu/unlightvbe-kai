@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using unlightvbe_kai_core.Enum;
+﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
 using unlightvbe_kai_core.Models.IUserInterface;
@@ -33,7 +28,7 @@ namespace unlightvbe_kai_core
             }
 
             /// <summary>
-            /// 開始執行階段
+            /// 開始執行階段程序
             /// </summary>
             /// <param name="stageNum">執行階段號</param>
             /// <param name="startPlayer">開始玩家方</param>
@@ -55,18 +50,65 @@ namespace unlightvbe_kai_core
                     for (int j = 0; j < playerDatas[(int)player].CharacterDatas.Count; j++)
                     {
                         var characterData = playerDatas[(int)player].CharacterDatas[j];
-                        int skillindex = 0;
+                        int skillIndex = 0;
 
                         foreach (var skill in characterData.Character.ActiveSkills)
                         {
-                            if (skill != null && skill.StageNumber.Any(x => x == stageNum) && (characterData.ActiveSkillIsActivate[skillindex] || !isAuthMode))
+                            if (skill != null && skill.StageNumber.Any(x => x == stageNum) && (characterData.ActiveSkillIsActivate[skillIndex] || !isAuthMode))
                             {
-                                var commandresult = skill.Function.Invoke(GetActiveSkillArgsModel(player, j));
-                                SkillCommandProxy.ExecuteCommands(stageNum, player, SkillType.ActiveSkill, commandresult);
+                                var commandresult = skill.Function.Invoke(GetActiveSkillArgsModel(skill, player, j, skillIndex, stageNum));
+                                var data = new SkillCommandProxyExecueCommandDataModel
+                                {
+                                    StageNum = stageNum,
+                                    Player = player,
+                                    SkillType = SkillType.ActiveSkill,
+                                    SkillIndex = skillIndex,
+                                    SkillID = skill.SkillID,
+                                    StageType = GetSkillStageType(stageNum),
+                                    CharacterBattleIndex = j,
+                                    IsAuthMode = isAuthMode
+                                };
+                                SkillCommandProxy.ExecuteCommands(data, commandresult);
                             }
-                            skillindex++;
+                            skillIndex++;
                         }
                     }
+                }
+            }
+
+            /// <summary>
+            /// 開始執行階段程序(指定單方個體)
+            /// </summary>
+            /// <param name="stageNum">執行階段號</param>
+            /// <param name="player">指定玩家方</param>
+            /// <param name="characterBattleIndex">指定角色Index</param>
+            /// <param name="skillType">指定技能體系</param>
+            /// <param name="skillIndex">指定技能Index</param>
+            public void StageStartSkillOnly(int stageNum, UserPlayerType player, int characterBattleIndex, SkillType skillType, int skillIndex)
+            {
+                var characterData = playerDatas[(int)player].CharacterDatas[characterBattleIndex];
+                switch (skillType)
+                {
+                    case SkillType.ActiveSkill:
+                        var skill = characterData.Character.ActiveSkills[skillIndex];
+                        if (skill != null && skill.StageNumber.Any(x => x == stageNum) && (characterData.ActiveSkillIsActivate[skillIndex]))
+                        {
+                            var commandresult = skill.Function.Invoke(GetActiveSkillArgsModel(skill, player, characterBattleIndex, skillIndex, stageNum));
+                            var data = new SkillCommandProxyExecueCommandDataModel
+                            {
+                                StageNum = stageNum,
+                                Player = player,
+                                SkillType = SkillType.ActiveSkill,
+                                SkillIndex = skillIndex,
+                                SkillID = skill.SkillID,
+                                StageType = GetSkillStageType(stageNum),
+                                CharacterBattleIndex = characterBattleIndex,
+                                IsAuthMode = true
+                            };
+                            SkillCommandProxy.ExecuteCommands(data, commandresult);
+                        }
+                        break;
+
                 }
             }
 
@@ -74,10 +116,12 @@ namespace unlightvbe_kai_core
             /// 取得技能引數資料傳遞物件(主動技能)
             /// </summary>
             /// <returns></returns>
-            private ActiveSkillArgsModel GetActiveSkillArgsModel(UserPlayerType startPlayer, int characterBattleIndex)
+            private ActiveSkillArgsModel GetActiveSkillArgsModel(Skill<ActiveSkill> skill, UserPlayerType startPlayer, int characterBattleIndex, int skillIndex, int stageNum)
             {
                 var result = new ActiveSkillArgsModel();
                 var oppenentPlayer = startPlayer.GetOppenentPlayer();
+
+                result.StageNum = stageNum;
 
                 result.CharacterHP = new int[2][];
                 result.CharacterHP[0] = playerDatas[(int)startPlayer].CharacterDatas.Select(x => x.CurrentHP).ToArray();
@@ -106,6 +150,22 @@ namespace unlightvbe_kai_core
                 result.DiceTrue[1] = BattleSystem.DiceTrue[(int)oppenentPlayer];
 
                 result.DiceTrueTotal = BattleSystem.DiceTrueTotal;
+
+                result.CharacterActiveSkillIsActivate = new bool[2][];
+                result.CharacterActiveSkillIsActivate[0] = playerDatas[(int)startPlayer].CharacterDatas[characterBattleIndex].ActiveSkillIsActivate.ToArray();
+                result.CharacterActiveSkillIsActivate[1] = playerDatas[(int)oppenentPlayer].CharacterDatas[characterBattleIndex].ActiveSkillIsActivate.ToArray();
+
+                result.CharacterPassiveSkillIsActivate = new bool[2][];
+                result.CharacterPassiveSkillIsActivate[0] = playerDatas[(int)startPlayer].CharacterDatas[characterBattleIndex].PassiveSkillIsActivate.ToArray();
+                result.CharacterPassiveSkillIsActivate[1] = playerDatas[(int)oppenentPlayer].CharacterDatas[characterBattleIndex].PassiveSkillIsActivate.ToArray();
+
+                result.CharacterActiveSkillTurnOnCount = new int[2][];
+                result.CharacterActiveSkillTurnOnCount[0] = playerDatas[(int)startPlayer].CharacterDatas[characterBattleIndex].ActiveSkillTurnOnCount.ToArray();
+                result.CharacterActiveSkillTurnOnCount[1] = playerDatas[(int)oppenentPlayer].CharacterDatas[characterBattleIndex].ActiveSkillTurnOnCount.ToArray();
+
+                result.CharacterPassiveSkillTurnOnCount = new int[2][];
+                result.CharacterPassiveSkillTurnOnCount[0] = playerDatas[(int)startPlayer].CharacterDatas[characterBattleIndex].PassiveSkillTurnOnCount.ToArray();
+                result.CharacterPassiveSkillTurnOnCount[1] = playerDatas[(int)oppenentPlayer].CharacterDatas[characterBattleIndex].PassiveSkillTurnOnCount.ToArray();
 
                 result.PlayerDistance = BattleSystem.PlayerDistance;
 
@@ -154,7 +214,22 @@ namespace unlightvbe_kai_core
                 )}
                 ).ToDictionary(x => x.Key, x => x.Item2);
 
+                result.SkillPhase = skill.Phase;
+                result.SkillDistance = new(skill.Distance);
+                result.SkillCardCondition = new(skill.Cards);
+                result.SkillIndex = skillIndex;
+
                 return result;
+            }
+
+            public static SkillStageType GetSkillStageType(int stageNum)
+            {
+                int[] stageTypeSpecial = new int[] { 42, 43, 44, 45, 92, 93, 94, 99 };
+                int[] stageTypeEvent = new int[] { 41, 46, 47, 48, 49, 61, 62, 72, 73, 74, 75, 76, 77, 101, 102, 103, 104, 105, 106, 107 };
+
+                if (stageTypeSpecial.Any(x => x == stageNum)) return SkillStageType.Special;
+                else if (stageTypeEvent.Any(x => x == stageNum)) return SkillStageType.Event;
+                else return SkillStageType.Normal;
             }
         }
     }

@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using unlightvbe_kai_core;
 using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Models;
+using unlightvbe_kai_Data.Character;
 
-namespace unlightvbe_kai_core
+namespace unlightvbe_kai_Data
 {
     public class SampleData
     {
-        public List<Character> Characters { get; set; } = new();
+        public List<unlightvbe_kai_core.Models.Character> Characters { get; set; } = new();
         public List<Deck_Sub> Deck_Subs { get; set; } = new();
         public List<Deck> Decks { get; set; } = new();
         public List<Player> Players { get; set; } = new();
@@ -26,41 +22,44 @@ namespace unlightvbe_kai_core
                             PlayerDistanceType.Close,
                             PlayerDistanceType.Long,
                         },
-                Phase = PhaseType.Attack,
-                StageNumber = new() { 1, 2, 3 },
+                Phase = PhaseType.Move,
+                StageNumber = new() { 44 },
                 Cards = new List<SkillCardConditionModel> { new()
                 {
                     Scope = SkillCardConditionScopeType.Above,
-                    CardType = ActionCardType.ATK_Sword,
+                    CardType = ActionCardType.None,
                     Number = 1
                 } },
                 Name = "TmpActiveSkill"
             };
 
-            Characters.Add(new()
-            {
-                Name = "Ria",
-                HP = 9,
-                ATK = 5,
-                DEF = 10,
-                VBEID = "S00105",
-                EventColour = "357000",
-                LevelMain = "LV",
-                LevelNum = 5,
-                ActiveSkills = new() { skill1 }
-            });
-            Characters.Add(new()
-            {
-                Name = "Evarist",
-                HP = 12,
-                ATK = 7,
-                DEF = 7,
-                VBEID = "N01105",
-                EventColour = "325000",
-                LevelMain = "LV",
-                LevelNum = 5,
-                ActiveSkills = new() { skill1 }
-            });
+            //Characters.Add(new()
+            //{
+            //    Name = "Ria",
+            //    HP = 9,
+            //    ATK = 5,
+            //    DEF = 10,
+            //    VBEID = "S00105",
+            //    EventColour = "357000",
+            //    LevelMain = "LV",
+            //    LevelNum = 5,
+            //    ActiveSkills = new() { skill1 }
+            //});
+            //Characters.Add(new()
+            //{
+            //    Name = "Evarist",
+            //    HP = 12,
+            //    ATK = 7,
+            //    DEF = 7,
+            //    VBEID = "N01105",
+            //    EventColour = "325000",
+            //    LevelMain = "LV",
+            //    LevelNum = 5,
+            //    ActiveSkills = new() { skill1 }
+            //});
+
+            Characters.Add(Ria.GetCharacter());
+            Characters.Add(Evarist.GetCharacter());
 
             for (int i = 0; i < 2; i++)
             {
@@ -91,6 +90,7 @@ namespace unlightvbe_kai_core
                 Deck = Decks[1]
             });
         }
+
         public static List<ActionCard> GetCardList_Deck()
         {
             var cards = new List<ActionCard>();
@@ -167,21 +167,26 @@ namespace unlightvbe_kai_core
             return Players.Find(x => x.PlayerId == id) ?? Players[0];
         }
 
-        public Character GetCharacter(string VBEID)
+        public unlightvbe_kai_core.Models.Character GetCharacter(string VBEID)
         {
             return Characters.Find(x => x.VBEID == VBEID) ?? Characters[0];
         }
 
         public List<SkillCommandModel> TmpActiveSkill(ActiveSkillArgsModel args)
         {
-            return new()
+            var commandFormater = new SkillCommandModelFormatConverter();
+
+            var tmpCheck = args.CheckActiveSkillCondition();
+            if (tmpCheck && !args.CharacterActiveSkillIsActivate[(int)UserPlayerRelativeType.Self][args.SkillIndex])
             {
-                new SkillCommandModel()
-                {
-                    Type = SkillCommandType.AtkingLineLight,
-                    Message = new string[2] { "1", "2" }
-                }
-            };
+                commandFormater.SkillTurnOnOffWithLineLight(true);
+            }
+            else if (!tmpCheck && args.CharacterActiveSkillIsActivate[(int)UserPlayerRelativeType.Self][args.SkillIndex])
+            {
+                commandFormater.SkillTurnOnOffWithLineLight(false);
+            }
+
+            return commandFormater.Output();
         }
     }
 }

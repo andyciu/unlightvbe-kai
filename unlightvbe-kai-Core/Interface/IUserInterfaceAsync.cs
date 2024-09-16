@@ -20,5 +20,6 @@ namespace unlightvbe_kai_core.Interface
         public Task PhaseStartAsync(PhaseStartModel data);
         public Task OpenOppenentPlayingCardAsync(OpenOppenentPlayingCardModel data);
         public Task ShowJudgmentAsync(ShowJudgmentModel data);
+        public Task ShowSkillAnimateAsync(ShowSkillAnimateModel data);
     }
 }

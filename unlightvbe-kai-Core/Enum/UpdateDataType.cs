@@ -17,5 +17,6 @@ namespace unlightvbe_kai_core.Enum
         OKButtonOpen,
         OpponentCharacterChangeBegin,
         OpponentCharacterChangeAction,
+        ActiveSkillLineLight
     }
 }

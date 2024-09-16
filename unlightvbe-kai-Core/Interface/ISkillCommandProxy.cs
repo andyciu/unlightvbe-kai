@@ -13,6 +13,6 @@ namespace unlightvbe_kai_core.Interface
     /// </summary>
     public interface ISkillCommandProxy
     {
-        public void ExecuteCommands(int stageNum, UserPlayerType player, SkillType skillType, List<SkillCommandModel> commandList);
+        public void ExecuteCommands(SkillCommandProxyExecueCommandDataModel data, List<SkillCommandModel> commandList);
     }
 }

@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\unlightvbe-kai-Core\unlightvbe-kai-Core.csproj" />
+    <ProjectReference Include="..\unlightvbe-kai-Data\unlightvbe-kai-Data.csproj" />
   </ItemGroup>
 
 </Project>

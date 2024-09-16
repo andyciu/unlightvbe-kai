@@ -11,6 +11,7 @@ namespace unlightvbe_kai_core.Enum
         None = 0,
         AttackPhaseFirstPlayerType,
         CharacterHPDamage,
-        CharacterHPHeal
+        CharacterHPHeal,
+        PassiveSkillLineLight
     }
 }

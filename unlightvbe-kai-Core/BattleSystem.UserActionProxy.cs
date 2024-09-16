@@ -84,6 +84,15 @@ namespace unlightvbe_kai_core
 
                             BattleSystem.DeckCardMove(tmpcard, BattleSystem.GetCardDeckType(player, origlocation), BattleSystem.GetCardDeckType(player, destlocation));
 
+                            int tmpStageNum = phaseType switch
+                            {
+                                PhaseType.Move => 44,
+                                PhaseType.Attack => 42,
+                                PhaseType.Defense => 43,
+                                _ => throw new NotImplementedException(),
+                            };
+                            BattleSystem.SkillAdapter.StageStart(tmpStageNum, player, false, false);
+
                             if (phaseType == PhaseType.Attack || phaseType == PhaseType.Defense)
                             {
                                 BattleSystem.UpdatePlayerDiceTotalNumber(player, phaseType);
@@ -121,6 +130,18 @@ namespace unlightvbe_kai_core
                             }
 
                             tmpcard.Reverse();
+
+                            if (tmpcard.Location == ActionCardLocation.Play)
+                            {
+                                int tmpStageNum = phaseType switch
+                                {
+                                    PhaseType.Move => 44,
+                                    PhaseType.Attack => 42,
+                                    PhaseType.Defense => 43,
+                                    _ => throw new NotImplementedException(),
+                                };
+                                BattleSystem.SkillAdapter.StageStart(tmpStageNum, player, false, false);
+                            }
 
                             if (phaseType == PhaseType.Attack || phaseType == PhaseType.Defense)
                             {

@@ -2,9 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>unlightvbe_kai_Script</RootNamespace>
+    <RootNamespace>unlightvbe_kai_Data</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\unlightvbe-kai-Core\unlightvbe-kai-Core.csproj" />
+  </ItemGroup>
 
 </Project>

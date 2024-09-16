@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using unlightvbe_kai_core.Enum;
+﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Models;
 
 namespace unlightvbe_kai_core
@@ -77,9 +71,7 @@ namespace unlightvbe_kai_core
         /// </summary>
         private void ImportActionCardToDeck()
         {
-            var cardlist = SampleData.GetCardList_Deck();
-
-            foreach (var card in cardlist)
+            foreach (var card in InitialCardDeck)
             {
                 int tmpnum = GetCardIndex(CardDeckType.Deck);
                 card.Number = tmpnum;
@@ -289,21 +281,72 @@ namespace unlightvbe_kai_core
                     break;
             }
 
+            #region 執行指令-攻擊/防禦階段系統骰數變化量控制
+            PlayerDatas[(int)player].SC_EventTotalDiceChangeRecordAssignMode = false;
+
+            foreach (var userPlayerRelativeType in System.Enum.GetValues<UserPlayerRelativeType>())
+            {
+                foreach (var skillType in System.Enum.GetValues<SkillType>())
+                {
+                    foreach (var record in PlayerDatas[(int)player].SC_EventTotalDiceChangeRecord[userPlayerRelativeType][skillType])
+                    {
+                        if (PlayerDatas[(int)player].SC_EventTotalDiceChangeRecordAssignMode &&
+                            record.Type != Enum.SkillCommand.EventTotalDiceChangeRecordType.Assign)
+                            continue;
+
+                        switch (record.Type)
+                        {
+                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Addition:
+                                result += record.Value;
+                                break;
+                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Subtraction:
+                                result -= record.Value;
+                                break;
+                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Multiplication:
+                                result *= record.Value;
+                                break;
+                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Division_Floor:
+                                result = (int)Math.Floor((double)result / record.Value);
+                                break;
+                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Division_Ceiling:
+                                result = (int)Math.Ceiling((double)result / record.Value);
+                                break;
+                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Assign:
+                                PlayerDatas[(int)player].SC_EventTotalDiceChangeRecordAssignMode = true;
+                                result = record.Value;
+                                break;
+                        }
+                    }
+                }
+            }
+            #endregion
+
             return result;
         }
 
         /// <summary>
         /// 更新玩家總骰數資料
         /// </summary>
-        /// <param name="player">玩家</param>
-        /// <param name="phase">判斷階段</param>
-        private void UpdatePlayerDiceTotalNumber(UserPlayerType player, PhaseType phase)
+        /// <param name="startPlayer">開始玩家方</param>
+        /// <param name="phase">開始玩家階段</param>
+        private void UpdatePlayerDiceTotalNumber(UserPlayerType startPlayer, PhaseType phase)
         {
-            PlayerDatas[(int)player].DiceTotal = GetPlayerDiceTotalNumber(player, phase, PlayerDistance);
-
-            UserPlayerType playerType_Opponent = player == UserPlayerType.Player1 ? UserPlayerType.Player2 : UserPlayerType.Player1;
+            UserPlayerType playerType_Opponent = startPlayer == UserPlayerType.Player1 ? UserPlayerType.Player2 : UserPlayerType.Player1;
             PhaseType phaseType_Opponent = phase == PhaseType.Attack ? PhaseType.Defense : PhaseType.Attack;
 
+            foreach (var userPlayerRelativeType in System.Enum.GetValues<UserPlayerRelativeType>())
+            {
+                foreach (var skillType in System.Enum.GetValues<SkillType>())
+                {
+                    PlayerDatas[(int)startPlayer].SC_EventTotalDiceChangeRecord[userPlayerRelativeType][skillType].Clear();
+                    PlayerDatas[(int)playerType_Opponent].SC_EventTotalDiceChangeRecord[userPlayerRelativeType][skillType].Clear();
+                }
+            }
+
+            //執行階段(45)
+            SkillAdapter.StageStart(45, startPlayer, true, true);
+
+            PlayerDatas[(int)startPlayer].DiceTotal = GetPlayerDiceTotalNumber(startPlayer, phase, PlayerDistance);
             PlayerDatas[(int)playerType_Opponent].DiceTotal = GetPlayerDiceTotalNumber(playerType_Opponent, phaseType_Opponent, PlayerDistance);
         }
 

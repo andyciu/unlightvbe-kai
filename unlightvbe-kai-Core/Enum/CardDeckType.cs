@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace unlightvbe_kai_core.Enum
 {
+    /// <summary>
+    /// 卡牌集合列舉(絕對)
+    /// </summary>
     public enum CardDeckType
     {
         Deck,

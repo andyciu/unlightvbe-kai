@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using unlightvbe_kai_core.Enum;
+﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
 using unlightvbe_kai_core.Models.IUserInterface;
@@ -558,6 +552,42 @@ namespace unlightvbe_kai_core
                 UserInterfaces[(int)UserPlayerType.Player2].ShowJudgment(new()
                 {
                     Type = type_p2
+                });
+            });
+            Task.WhenAll(task1, task2).Wait();
+        }
+
+        public void ActiveSkillLineLight(UserPlayerType player, int skillIndex, bool isLighting)
+        {
+            Task.Run(() =>
+            {
+                UserInterfaces[(int)player].UpdateData(new()
+                {
+                    Type = UpdateDataType.ActiveSkillLineLight,
+                    Value = skillIndex,
+                    Message = isLighting.ToString()
+                });
+            }).Wait();
+        }
+
+        public void ShowSkillAnimate(UserPlayerType selfPlayer, string skillVBEID)
+        {
+            UserPlayerType opponentPlayer = selfPlayer.GetOppenentPlayer();
+
+            Task task1 = Task.Run(() =>
+            {
+                UserInterfaces[(int)selfPlayer].ShowSkillAnimate(new()
+                {
+                    Player = UserPlayerRelativeType.Self,
+                    SkillID = skillVBEID
+                });
+            });
+            Task task2 = Task.Run(() =>
+            {
+                UserInterfaces[(int)opponentPlayer].ShowSkillAnimate(new()
+                {
+                    Player = UserPlayerRelativeType.Opponent,
+                    SkillID = skillVBEID
                 });
             });
             Task.WhenAll(task1, task2).Wait();

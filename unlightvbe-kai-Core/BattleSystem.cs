@@ -1,6 +1,4 @@
-﻿using System;
-using System.Numerics;
-using unlightvbe_kai_core.Enum;
+﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
 
@@ -76,6 +74,10 @@ namespace unlightvbe_kai_core
         /// 技能執行指令解釋器
         /// </summary>
         protected SkillCommandProxyClass SkillCommandProxy { get; set; }
+        /// <summary>
+        /// 初始戰鬥公牌排組
+        /// </summary>
+        protected List<ActionCard> InitialCardDeck { get; set; }
         private static readonly Random Rnd = new(DateTime.Now.Millisecond);
 
 
@@ -118,9 +120,16 @@ namespace unlightvbe_kai_core
             MultiUIAdapter = new(userInterface_P1, userInterface_P2, new UserActionProxy(this));
         }
 
+        public void SetInitialCardDeck(List<ActionCard> cardlist)
+        {
+            InitialCardDeck = cardlist;
+        }
+
         public void Start()
         {
             if (IsFinish) return;
+            if (MultiUIAdapter == null) throw new Exception("MultiUIAdapter not Set.");
+            if (InitialCardDeck == null) throw new Exception("InitialCardDeck not Set.");
 
             InitialData();
             StartScreenPhase();
@@ -218,6 +227,9 @@ namespace unlightvbe_kai_core
                 Value = CardDecks[(int)CardDeckType.Deck].Count
             });
 
+            //執行階段(0)
+            SkillAdapter.StageStart(0, UserPlayerType.Player1, true, true);
+
             //發牌(行動卡)
             while (waitToDeal_P1 > 0 || waitToDeal_P2 > 0)
             {
@@ -276,6 +288,9 @@ namespace unlightvbe_kai_core
                 Type = UpdateDataType.DeckCount,
                 Value = CardDecks[(int)CardDeckType.Deck].Count
             });
+
+            //執行階段(1)
+            SkillAdapter.StageStart(1, UserPlayerType.Player1, true, true);
         }
 
         /// <summary>
@@ -297,9 +312,13 @@ namespace unlightvbe_kai_core
                 Type = PhaseType.Move
             });
 
-            SkillAdapter.StageStart(1, UserPlayerType.Player1, false, true);
-
             MultiUIAdapter.MovePhaseReadAction();
+
+            //執行階段(2/3/4/70/71)
+            foreach (var tmpNum in new int[] { 2, 3, 4, 70, 71 })
+            {
+                SkillAdapter.StageStart(tmpNum, UserPlayerType.Player1, true, true);
+            }
 
             //回血動作
             foreach (var player in PlayerDatas)
@@ -365,12 +384,24 @@ namespace unlightvbe_kai_core
 
             MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.AttackPhaseFirstPlayerType, AttackPhaseFirst, 0, null);
 
+            //執行階段(5/6)
+            foreach (var tmpNum in new int[] { 5, 6 })
+            {
+                SkillAdapter.StageStart(tmpNum, AttackPhaseFirst, true, true);
+            }
+
             MultiUIAdapter.OpenOppenentPlayingCard(
                 CardDecks[CardDeckType.Play_P1].Select(x => x.Value).ToList(),
                 CardDecks[CardDeckType.Play_P2].Select(x => x.Value).ToList());
 
+            //執行階段(7)
+            SkillAdapter.StageStart(7, AttackPhaseFirst, true, true);
+
             //收牌
             CollectPlayingCardToGraveyard();
+
+            //執行階段(8)
+            SkillAdapter.StageStart(8, AttackPhaseFirst, true, true);
 
             //交換角色動作
             foreach (var player in PlayerDatas)
@@ -385,6 +416,11 @@ namespace unlightvbe_kai_core
             if (!PlayerCharacterHPCheck())
             {
                 IsJudgmentMode = true;
+            }
+            else
+            {
+                //執行階段(9)
+                SkillAdapter.StageStart(9, AttackPhaseFirst, true, true);
             }
         }
 
@@ -419,6 +455,10 @@ namespace unlightvbe_kai_core
 
                 MultiUIAdapter.PhaseStartAttackWithDefense(attackPlyaer);
 
+                //執行階段(17/37)
+                SkillAdapter.StageStart(17, attackPlyaer, true, false);
+                SkillAdapter.StageStart(37, defensePlayer, true, false);
+
                 //Attack Action
                 MultiUIAdapter.AttackWithDefensePhaseReadAction(attackPlyaer, PhaseType.Attack);
                 MultiUIAdapter.OpenOppenentPlayingCard(defensePlayer,
@@ -429,9 +469,17 @@ namespace unlightvbe_kai_core
                 MultiUIAdapter.OpenOppenentPlayingCard(attackPlyaer,
                     CardDecks[GetCardDeckType(defensePlayer, ActionCardLocation.Play)].Select(x => x.Value).ToList());
 
+                //執行階段(10/30)
+                SkillAdapter.StageStart(10, attackPlyaer, true, false);
+                SkillAdapter.StageStart(30, defensePlayer, true, false);
+
+                //執行階段(11/31)
+                SkillAdapter.StageStart(11, attackPlyaer, true, false);
+                SkillAdapter.StageStart(31, defensePlayer, true, false);
+
                 //骰數再計算
                 UpdatePlayerDiceTotalNumber(attackPlyaer, PhaseType.Attack);
-                UpdatePlayerDiceTotalNumber(defensePlayer, PhaseType.Defense);
+                //UpdatePlayerDiceTotalNumber(defensePlayer, PhaseType.Defense);
                 MultiUIAdapter.UpdateDiceTotalNumberRelative(attackPlyaer, defensePlayer,
                     PlayerDatas[(int)attackPlyaer].DiceTotal, PlayerDatas[(int)defensePlayer].DiceTotal);
 
@@ -445,8 +493,23 @@ namespace unlightvbe_kai_core
                     MultiUIAdapter.ShowBattleMessage("Cancel attack.");
                 }
 
+                //執行階段(12/32)
+                SkillAdapter.StageStart(12, attackPlyaer, true, false);
+                SkillAdapter.StageStart(32, defensePlayer, true, false);
+
                 //收牌
                 CollectPlayingCardToGraveyard();
+
+                //角色存活檢查
+                if (!PlayerCharacterHPCheck())
+                {
+                    IsJudgmentMode = true;
+                    return;
+                }
+
+                //執行階段(13/33)
+                SkillAdapter.StageStart(13, attackPlyaer, true, false);
+                SkillAdapter.StageStart(33, defensePlayer, true, false);
 
                 //擲骰
                 DiceTrue = new int[2];
@@ -460,16 +523,34 @@ namespace unlightvbe_kai_core
                 //傷害計算
                 DiceTrueTotal = DiceTrue[(int)attackPlyaer] - DiceTrue[(int)defensePlayer];
 
+                //執行階段(20~29)
+                foreach (var tmpNum in new int[] { 20, 21, 22, 23, 24, 25, 26, 27, 28, 29 })
+                {
+                    SkillAdapter.StageStart(tmpNum, attackPlyaer, true, true);
+                }
+
                 if (DiceTrueTotal > 0)
                 {
                     CharacterHPDamage(defensePlayer, PlayerDatas[(int)defensePlayer].CurrentCharacter.Character.VBEID, DiceTrueTotal);
                 }
 
+                //執行階段(14/34)
+                SkillAdapter.StageStart(14, attackPlyaer, true, false);
+                SkillAdapter.StageStart(34, defensePlayer, true, false);
+
+                //執行階段(15/35)
+                SkillAdapter.StageStart(15, attackPlyaer, true, false);
+                SkillAdapter.StageStart(35, defensePlayer, true, false);
+
+                //執行階段(16/36)
+                SkillAdapter.StageStart(16, attackPlyaer, true, false);
+                SkillAdapter.StageStart(36, defensePlayer, true, false);
+
                 //角色存活檢查
                 if (!PlayerCharacterHPCheck())
                 {
                     IsJudgmentMode = true;
-                    break;
+                    return;
                 }
             }
         }
@@ -514,6 +595,12 @@ namespace unlightvbe_kai_core
         /// </summary>
         private void TurnEndPhase()
         {
+            //執行階段(50/51/52)
+            foreach (var tmpNum in new int[] { 50, 51, 52 })
+            {
+                SkillAdapter.StageStart(tmpNum, AttackPhaseFirst.GetOppenentPlayer(), true, true);
+            }
+
             //角色存活檢查
             if (!PlayerCharacterHPCheck())
             {
@@ -529,6 +616,12 @@ namespace unlightvbe_kai_core
             {
                 GraveyardDeckReUse();
                 CardDecks[CardDeckType.Deck] = ShuffleDeck(CardDecks[CardDeckType.Deck]);
+            }
+
+            //執行階段(53/54/55)
+            foreach (var tmpNum in new int[] { 53, 54, 55 })
+            {
+                SkillAdapter.StageStart(tmpNum, AttackPhaseFirst.GetOppenentPlayer(), true, true);
             }
 
             MultiUIAdapter.ShowBattleMessage(string.Format("Turn {0} end.", TurnNum));

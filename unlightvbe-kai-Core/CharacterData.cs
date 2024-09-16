@@ -14,9 +14,21 @@ namespace unlightvbe_kai_core
     {
         public Character Character { get; }
         public int CurrentHP { get; set; }
+        /// <summary>
+        /// 主動技能是否啟動標記
+        /// </summary>
         public bool[] ActiveSkillIsActivate { get; set; }
+        /// <summary>
+        /// 被動技能是否啟動標記
+        /// </summary>
         public bool[] PassiveSkillIsActivate { get; set; }
+        /// <summary>
+        /// 主動技能啟動次數
+        /// </summary>
         public int[] ActiveSkillTurnOnCount { get; set; }
+        /// <summary>
+        /// 被動技能啟動次數
+        /// </summary>
         public int[] PassiveSkillTurnOnCount { get; set; }
         public CharacterData(Character character)
         {

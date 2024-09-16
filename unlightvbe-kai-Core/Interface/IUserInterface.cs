@@ -22,5 +22,6 @@ namespace unlightvbe_kai_core.Interface
         public void OpenOppenentPlayingCard(OpenOppenentPlayingCardModel data);
         public ChangeCharacterActionModel ChangeCharacterAction();
         public void ShowJudgment(ShowJudgmentModel data);
+        public void ShowSkillAnimate(ShowSkillAnimateModel data);
     }
 }

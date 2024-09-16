@@ -1,6 +1,6 @@
 ﻿using unlightvbe_kai_core;
 using unlightvbe_kai_core.Models;
-using static System.Net.Mime.MediaTypeNames;
+using unlightvbe_kai_Data;
 
 namespace unlightvbe_kai_console
 {
@@ -21,6 +21,7 @@ namespace unlightvbe_kai_console
             BattleSystem battleSystem = new(player1, player2);
             battleSystem.SetUserInterface(new ConsoleInterface("1", player1, player2),
                 new AIWithConsoleInterface("2", player2, player1));
+            battleSystem.SetInitialCardDeck(SampleData.GetCardList_Deck());
 
             Task.Run(() => { battleSystem.Start(); }).Wait();
         }

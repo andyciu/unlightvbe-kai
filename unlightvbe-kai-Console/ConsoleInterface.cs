@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using unlightvbe_kai_core.Enum;
+﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
 using unlightvbe_kai_core.Models.IUserInterface;
@@ -32,15 +27,15 @@ namespace unlightvbe_kai_console
         /// <summary>
         /// 手牌清單
         /// </summary>
-        protected List<CardModel> HoldCards = new List<CardModel>();
+        protected List<CardModel> HoldCards = new();
         /// <summary>
         /// 出牌清單
         /// </summary>
-        protected List<CardModel> PlayCards = new List<CardModel>();
+        protected List<CardModel> PlayCards = new();
         /// <summary>
         /// 對手出牌清單
         /// </summary>
-        protected List<CardModel> OpponentPlayCards = new List<CardModel>();
+        protected List<CardModel> OpponentPlayCards = new();
         /// <summary>
         /// 對手手牌數量
         /// </summary>
@@ -101,6 +96,14 @@ namespace unlightvbe_kai_console
         /// 對手是否在更換角色中
         /// </summary>
         protected bool IsOpponentCharacterChangeing;
+        /// <summary>
+        /// 人物主動技能燈開關標記
+        /// </summary>
+        protected bool[] ActiveSkillLineLight = new bool[4];
+        /// <summary>
+        /// 人物被動技能燈開關標記
+        /// </summary>
+        protected bool[,] PassiveSkillLineLight = new bool[2, 4];
         public ConsoleInterface(string instanceName, Player selfPlayer, Player opponentPlayer)
         {
             InstanceName = instanceName;
@@ -415,6 +418,9 @@ namespace unlightvbe_kai_console
                     }
 
                     break;
+                case UpdateDataType.ActiveSkillLineLight:
+                    ActiveSkillLineLight[data.Value] = Convert.ToBoolean(data.Message);
+                    break;
                 default:
                     ConsoleWriteLine("UpdateData Type not found.");
                     break;
@@ -726,10 +732,26 @@ namespace unlightvbe_kai_console
                         ConsoleWriteLine("CharacterHPHeal CharacterData not found.");
                     }
                     break;
+                case UpdateDataRelativeType.PassiveSkillLineLight:
+                    PassiveSkillLineLight[(int)data.Player, data.Value] = Convert.ToBoolean(data.Message);
+                    break;
                 default:
                     ConsoleWriteLine("UpdateDataRelativeType not found.");
                     break;
             }
+        }
+
+        public Task ShowSkillAnimateAsync(ShowSkillAnimateModel data)
+        {
+            ShowSkillAnimate(data);
+            return Task.CompletedTask;
+        }
+
+        public void ShowSkillAnimate(ShowSkillAnimateModel data)
+        {
+            ConsoleWriteLine("Test_ShowActiveSkillAnimate");
+            ConsoleWriteLine("Player: {0}, SkillID: {1}", data.Player.ToString(), data.SkillID);
+            Thread.Sleep(1000);
         }
     }
 }

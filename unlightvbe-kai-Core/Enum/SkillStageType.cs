@@ -7,30 +7,22 @@ using System.Threading.Tasks;
 namespace unlightvbe_kai_core.Enum
 {
     /// <summary>
-    /// 遊戲回合階段
+    /// 執行階段型態列舉
     /// </summary>
-    public enum PhaseType
+    public enum SkillStageType
     {
         None = 0,
         /// <summary>
-        /// 發牌階段
+        /// 普通型
         /// </summary>
-        Draw,
+        Normal,
         /// <summary>
-        /// 移動階段
+        /// 事件型
         /// </summary>
-        Move,
+        Event,
         /// <summary>
-        /// 攻擊階段
+        /// 特殊型
         /// </summary>
-        Attack,
-        /// <summary>
-        /// 防禦階段
-        /// </summary>
-        Defense,
-        /// <summary>
-        /// 回合結束階段
-        /// </summary>
-        TurnEnd
+        Special
     }
 }

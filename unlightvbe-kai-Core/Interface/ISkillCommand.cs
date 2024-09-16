@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using unlightvbe_kai_core.Models;
+﻿using unlightvbe_kai_core.Models;
 
 namespace unlightvbe_kai_core.Interface
 {
@@ -12,6 +7,11 @@ namespace unlightvbe_kai_core.Interface
     /// </summary>
     public interface ISkillCommand
     {
-        public void AtkingLineLight(SkillCommandDataModel data);
+        public void SkillLineLight(SkillCommandDataModel data);
+        public void SkillTurnOnOff(SkillCommandDataModel data);
+        public void SkillLineLightAnother(SkillCommandDataModel data);
+        public void SkillTurnOnOffAnother(SkillCommandDataModel data);
+        public void SkillAnimateStartPlay(SkillCommandDataModel data);
+        public void EventTotalDiceChange(SkillCommandDataModel data);
     }
 }
