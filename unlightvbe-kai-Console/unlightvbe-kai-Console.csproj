@@ -1,16 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>unlightvbe_kai_console</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\unlightvbe-kai-Core\unlightvbe-kai-Core.csproj" />
     <ProjectReference Include="..\unlightvbe-kai-Data\unlightvbe-kai-Data.csproj" />
   </ItemGroup>
-
 </Project>
