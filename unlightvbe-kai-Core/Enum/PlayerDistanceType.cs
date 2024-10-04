@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace unlightvbe_kai_core.Enum
+﻿namespace unlightvbe_kai_core.Enum
 {
     /// <summary>
     /// 玩家角色間相對距離列舉
