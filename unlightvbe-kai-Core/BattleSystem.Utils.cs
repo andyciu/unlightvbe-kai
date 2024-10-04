@@ -1,4 +1,5 @@
 ﻿using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Enum.SkillCommand;
 using unlightvbe_kai_core.Models;
 
 namespace unlightvbe_kai_core
@@ -281,38 +282,69 @@ namespace unlightvbe_kai_core
                     break;
             }
 
-            #region 執行指令-攻擊/防禦階段系統骰數變化量控制
-            PlayerDatas[(int)player].SC_EventTotalDiceChangeRecordAssignMode = false;
+            #region 執行指令-攻擊/防禦階段角色白值能力對骰數變化量控制(EventPersonAbilityDiceChange)
+            PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.RecordValue = false;
 
             foreach (var userPlayerRelativeType in System.Enum.GetValues<UserPlayerRelativeType>())
             {
                 foreach (var skillType in System.Enum.GetValues<SkillType>())
                 {
-                    foreach (var record in PlayerDatas[(int)player].SC_EventTotalDiceChangeRecord[userPlayerRelativeType][skillType])
+                    foreach (var record in PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.MainProperty[userPlayerRelativeType][skillType])
                     {
-                        if (PlayerDatas[(int)player].SC_EventTotalDiceChangeRecordAssignMode &&
-                            record.Type != Enum.SkillCommand.EventTotalDiceChangeRecordType.Assign)
+                        if (PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.RecordValue &&
+                            record.Type != NumberChangeRecordThreeVersionType.Assign)
                             continue;
 
                         switch (record.Type)
                         {
-                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Addition:
+                            case NumberChangeRecordThreeVersionType.Addition:
                                 result += record.Value;
                                 break;
-                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Subtraction:
+                            case NumberChangeRecordThreeVersionType.Subtraction:
                                 result -= record.Value;
                                 break;
-                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Multiplication:
+                            case NumberChangeRecordThreeVersionType.Assign:
+                                PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.RecordValue = true;
+                                result = record.Value;
+                                break;
+                        }
+                    }
+                }
+            }
+            #endregion
+
+            #region 執行指令-攻擊/防禦階段系統骰數變化量控制(EventTotalDiceChange)
+            PlayerDatas[(int)player].SC_EventTotalDiceChangeRecord.RecordValue = false;
+
+            foreach (var userPlayerRelativeType in System.Enum.GetValues<UserPlayerRelativeType>())
+            {
+                foreach (var skillType in System.Enum.GetValues<SkillType>())
+                {
+                    foreach (var record in PlayerDatas[(int)player].SC_EventTotalDiceChangeRecord.MainProperty[userPlayerRelativeType][skillType])
+                    {
+                        if (PlayerDatas[(int)player].SC_EventTotalDiceChangeRecord.RecordValue &&
+                            record.Type != NumberChangeRecordSixVersionType.Assign)
+                            continue;
+
+                        switch (record.Type)
+                        {
+                            case NumberChangeRecordSixVersionType.Addition:
+                                result += record.Value;
+                                break;
+                            case NumberChangeRecordSixVersionType.Subtraction:
+                                result -= record.Value;
+                                break;
+                            case NumberChangeRecordSixVersionType.Multiplication:
                                 result *= record.Value;
                                 break;
-                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Division_Floor:
+                            case NumberChangeRecordSixVersionType.Division_Floor:
                                 result = (int)Math.Floor((double)result / record.Value);
                                 break;
-                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Division_Ceiling:
+                            case NumberChangeRecordSixVersionType.Division_Ceiling:
                                 result = (int)Math.Ceiling((double)result / record.Value);
                                 break;
-                            case Enum.SkillCommand.EventTotalDiceChangeRecordType.Assign:
-                                PlayerDatas[(int)player].SC_EventTotalDiceChangeRecordAssignMode = true;
+                            case NumberChangeRecordSixVersionType.Assign:
+                                PlayerDatas[(int)player].SC_EventTotalDiceChangeRecord.RecordValue = true;
                                 result = record.Value;
                                 break;
                         }
@@ -338,8 +370,10 @@ namespace unlightvbe_kai_core
             {
                 foreach (var skillType in System.Enum.GetValues<SkillType>())
                 {
-                    PlayerDatas[(int)startPlayer].SC_EventTotalDiceChangeRecord[userPlayerRelativeType][skillType].Clear();
-                    PlayerDatas[(int)playerType_Opponent].SC_EventTotalDiceChangeRecord[userPlayerRelativeType][skillType].Clear();
+                    PlayerDatas[(int)startPlayer].SC_EventPersonAbilityDiceChangeRecord.MainProperty[userPlayerRelativeType][skillType].Clear();
+                    PlayerDatas[(int)playerType_Opponent].SC_EventPersonAbilityDiceChangeRecord.MainProperty[userPlayerRelativeType][skillType].Clear();
+                    PlayerDatas[(int)startPlayer].SC_EventTotalDiceChangeRecord.MainProperty[userPlayerRelativeType][skillType].Clear();
+                    PlayerDatas[(int)playerType_Opponent].SC_EventTotalDiceChangeRecord.MainProperty[userPlayerRelativeType][skillType].Clear();
                 }
             }
 
@@ -437,20 +471,34 @@ namespace unlightvbe_kai_core
         /// <summary>
         /// 角色傷害執行
         /// </summary>
-        /// <param name="player">玩家</param>
-        /// <param name="characterVBEID">角色VBEID</param>
-        /// <param name="damageNumber">傷害數</param>
-        private void CharacterHPDamage(UserPlayerType player, string characterVBEID, int damageNumber)
+        private void CharacterHPDamage(CharacterHPDamageDataModel data)
         {
-            var characterData = PlayerDatas[(int)player].GetCharacterData(characterVBEID);
+            var characterData = PlayerDatas[(int)data.Player].GetCharacterData(data.CharacterVBEID);
             if (characterData == null) throw new Exception("characterVBEID null reference");
 
             int origHP = characterData.CurrentHP;
 
-            characterData.CurrentHP -= damageNumber;
-            if (characterData.CurrentHP < 0) characterData.CurrentHP = 0;
+            SkillAdapter.StageStart(46, data.Player, true, true, new string[]
+            {
+                ((int)data.Player).ToString(),
+                PlayerDatas[(int)data.Player].GetCharacterDataIndex(data.CharacterVBEID).ToString()!,
+                ((int)data.DamageType).ToString(),
+                data.DamageNumber.ToString(),
+                ((int)data.TriggerPlayerType).ToString(),
+                ((int)data.TriggerSkillType).ToString()
+            });
 
-            MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPDamage, player, origHP - characterData.CurrentHP, characterVBEID);
+            if (data.DamageType == CharacterHPDamageType.Death)
+            {
+                characterData.CurrentHP = 0;
+            }
+            else
+            {
+                characterData.CurrentHP -= data.DamageNumber;
+                if (characterData.CurrentHP < 0) characterData.CurrentHP = 0;
+            }
+
+            MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPDamage, data.Player, origHP - characterData.CurrentHP, data.CharacterVBEID);
         }
 
         /// <summary>
@@ -459,19 +507,53 @@ namespace unlightvbe_kai_core
         /// <param name="player">玩家</param>
         /// <param name="characterVBEID">角色VBEID</param>
         /// <param name="healNumber">回復數</param>
-        private void CharacterHPHeal(UserPlayerType player, string characterVBEID, int healNumber)
+        private void CharacterHPHeal(CharacterHPHealDataModel data)
         {
-            var characterData = PlayerDatas[(int)player].GetCharacterData(characterVBEID);
+            var characterData = PlayerDatas[(int)data.Player].GetCharacterData(data.CharacterVBEID);
             if (characterData == null) throw new Exception("characterVBEID null reference");
 
             if (characterData.CurrentHP < characterData.Character.HP)
             {
                 int origHP = characterData.CurrentHP;
 
-                characterData.CurrentHP += healNumber;
+                SkillAdapter.StageStart(48, data.Player, true, true, new string[]
+                {
+                    ((int)data.Player).ToString(),
+                    PlayerDatas[(int)data.Player].GetCharacterDataIndex(data.CharacterVBEID).ToString()!,
+                    data.HealNumber.ToString(),
+                    ((int)data.TriggerPlayerType).ToString(),
+                    ((int)data.TriggerSkillType).ToString()
+                });
+
+                characterData.CurrentHP += data.HealNumber;
                 if (characterData.CurrentHP > characterData.Character.HP) characterData.CurrentHP = characterData.Character.HP;
 
-                MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPHeal, player, characterData.CurrentHP - origHP, characterVBEID);
+                MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPHeal, data.Player, characterData.CurrentHP - origHP, data.CharacterVBEID);
+            }
+        }
+
+        /// <summary>
+        /// 變更玩家雙方場上距離
+        /// </summary>
+        /// <param name="newDistance">新設定距離</param>
+        /// <param name="isCallEvent">是否觸發執行階段事件(47)</param>
+        /// <param name="triggerPlayer">觸發事件方</param>
+        private void ChangePlayerDistance(PlayerDistanceType newDistance, bool isCallEvent, TriggerPlayerType triggerPlayer)
+        {
+            m_playerDistance.RecordValue = false;
+            if (isCallEvent)
+            {
+                SkillAdapter.StageStart(47, triggerPlayer == TriggerPlayerType.System ? AttackPhaseFirst : triggerPlayer.ToUserPlayerType()!.Value, true, true, new string[]
+                {
+                    ((int)PlayerDistance).ToString(),
+                    ((int)newDistance).ToString(),
+                    ((int)triggerPlayer).ToString(),
+                });
+            }
+
+            if (!m_playerDistance.RecordValue)
+            {
+                m_playerDistance.MainProperty = newDistance;
             }
         }
     }

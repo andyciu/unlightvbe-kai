@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using unlightvbe_kai_core.Enum.SkillCommand;
 
 namespace unlightvbe_kai_core.Enum
 {
@@ -27,5 +23,20 @@ namespace unlightvbe_kai_core.Enum
         /// 人物實際狀態
         /// </summary>
         CharacterActualStatus
+    }
+
+    static class SkillTypeMethods
+    {
+        public static TriggerSkillType ToTriggerSkillType(this SkillType type)
+        {
+            return type switch
+            {
+                SkillType.ActiveSkill => TriggerSkillType.ActiveSkill,
+                SkillType.PassiveSkill => TriggerSkillType.PassiveSkill,
+                SkillType.Buff => TriggerSkillType.Buff,
+                SkillType.CharacterActualStatus => TriggerSkillType.CharacterActualStatus,
+                _ => throw new NotImplementedException()
+            };
+        }
     }
 }

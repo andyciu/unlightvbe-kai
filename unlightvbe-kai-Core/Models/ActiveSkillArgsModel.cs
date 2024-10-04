@@ -116,6 +116,10 @@ namespace unlightvbe_kai_core.Models
         /// 發動之技能目前位置
         /// </summary>
         public int SkillIndex { get; set; }
+        /// <summary>
+        /// 執行階段多用途紀錄資訊
+        /// </summary>
+        public string[]? StageMessage { get; set; }
 
         /// <summary>
         /// 檢查主動技能是否符合發動條件

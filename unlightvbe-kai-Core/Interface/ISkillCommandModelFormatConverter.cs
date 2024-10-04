@@ -14,6 +14,18 @@ namespace unlightvbe_kai_core.Interface
         public void SkillLineLightAnother(SkillType skillType, int skillNum, bool isTurnOn);
         public void SkillTurnOnOffAnother(SkillType skillType, int skillNum, bool isTurnOn);
         public void SkillAnimateStartPlay();
-        public void EventTotalDiceChange(UserPlayerRelativeType player, EventTotalDiceChangeRecordType recordType, int value);
+        public void BattleTurnControl(NumberChangeRecordTwoVersionType recordType, int value);
+        public void BattleSendMessage(string message);
+        public void EventTotalDiceChange(UserPlayerRelativeType player, NumberChangeRecordSixVersionType recordType, int value);
+        public void EventPersonAbilityDiceChange(UserPlayerRelativeType player, NumberChangeRecordThreeVersionType recordType, int value);
+        public void PersonTotalDiceControl(UserPlayerRelativeType player, NumberChangeRecordSixVersionType recordType, int value);
+        public void AttackTrueDiceControl(NumberChangeRecordThreeVersionType recordType, int value);
+        public void BattleStartDice();
+        public void BattleMoveControl(PlayerDistanceType distanceType);
+        public void EventMoveActionOff();
+        public void PersonMoveControl(UserPlayerRelativeType player, NumberChangeRecordThreeVersionType recordType, int value);
+        public void PersonMoveActionChange(UserPlayerRelativeType player, PersonMoveActionType recordType);
+        public void PersonAttackFirstControl(UserPlayerRelativeType player);
+        public void PersonBloodControl(UserPlayerRelativeType player, int characterNum, PersonBloodControlType controlType, int value);
     }
 }

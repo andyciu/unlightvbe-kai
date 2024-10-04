@@ -1,4 +1,5 @@
 ﻿using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Enum.SkillCommand;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
 
@@ -53,11 +54,37 @@ namespace unlightvbe_kai_core
         /// <summary>
         /// 玩家雙方場上距離
         /// </summary>
-        private PlayerDistanceType PlayerDistance;
+        private PlayerDistanceType PlayerDistance => m_playerDistance.MainProperty;
+        /// <summary>
+        /// 玩家雙方場上距離(私有紀錄)
+        /// </summary>
+        /// <remarks>
+        /// Record: <br/>
+        /// <list type="number">
+        ///     <item>
+        ///         <term>EventMoveActionOff</term>
+        ///         <description>bool</description>
+        ///     </item>
+        /// </list>
+        /// </remarks>
+        private PropertyWithRecord<PlayerDistanceType, bool> m_playerDistance = new();
         /// <summary>
         /// 對戰每回合攻擊優先方位標記
         /// </summary>
-        private UserPlayerType AttackPhaseFirst;
+        private UserPlayerType AttackPhaseFirst => m_AttackPhaseFirst.MainProperty;
+        /// <summary>
+        /// 對戰每回合攻擊優先方位標記(私有紀錄)
+        /// </summary>
+        /// <remarks>
+        /// Record: <br/>
+        /// <list type="number">
+        ///     <item>
+        ///         <term>PersonAttackFirstControl-AssignMode(是否進入指定模式)</term>
+        ///         <description>bool</description>
+        ///     </item>
+        /// </list>
+        /// </remarks>
+        private PropertyWithRecord<UserPlayerType, bool> m_AttackPhaseFirst = new();
         /// <summary>
         /// 當前回合階段
         /// </summary>
@@ -174,8 +201,7 @@ namespace unlightvbe_kai_core
                 player.HoldMaxCount = 5;
             }
 
-            PlayerDistance = PlayerDistanceType.Middle;
-
+            ChangePlayerDistance(PlayerDistanceType.Middle, false, TriggerPlayerType.System);
         }
 
         /// <summary>
@@ -305,7 +331,14 @@ namespace unlightvbe_kai_core
             {
                 player.MoveBarSelect = MoveBarSelectType.None;
                 player.IsOKButtonSelect = false;
+
+                foreach (var userPlayerRelativeType in System.Enum.GetValues<UserPlayerRelativeType>())
+                {
+                    player.SC_PersonMoveControlRecord[userPlayerRelativeType].Clear();
+                }
             }
+
+            m_AttackPhaseFirst.RecordValue = false;
 
             MultiUIAdapter.PhaseStart(new()
             {
@@ -325,20 +358,63 @@ namespace unlightvbe_kai_core
             {
                 if (player.MoveBarSelect == MoveBarSelectType.Stay)
                 {
-                    CharacterHPHeal(player.PlayerType, player.CurrentCharacter.Character.VBEID, 1);
+                    CharacterHPHeal(new()
+                    {
+                        Player = player.PlayerType,
+                        CharacterVBEID = player.CurrentCharacter.Character.VBEID,
+                        HealNumber = 1,
+                        IsCallEvent = true,
+                        TriggerPlayerType = TriggerPlayerType.System,
+                        TriggerSkillType = TriggerSkillType.System
+                    });
                 }
             }
 
-            //加總移動值
+            //計算加總移動值
             Dictionary<ActionCardType, int>[] cardtotal = new Dictionary<ActionCardType, int>[2];
             int[] movPlayerTotal = new int[2] { 0, 0 };
+            bool[] tmpPersonMoveControlAssignMode = new bool[2] { false, false };
             int movSystemTotal = 0;
 
             foreach (var player in System.Enum.GetValues<UserPlayerType>())
             {
                 cardtotal[(int)player] = GetCardTotalNumber(player, ActionCardLocation.Play);
                 cardtotal[(int)player].TryGetValue(ActionCardType.MOV, out movPlayerTotal[(int)player]);
+            }
 
+            #region 執行指令-人物移動階段總移動量控制(PersonMoveControl)
+            foreach (var player in System.Enum.GetValues<UserPlayerType>())
+            {
+                foreach (var userPlayerRelativeType in System.Enum.GetValues<UserPlayerRelativeType>())
+                {
+                    var tmpSetPlayer = userPlayerRelativeType == UserPlayerRelativeType.Self ? player : player.GetOppenentPlayer();
+
+                    foreach (var record in PlayerDatas[(int)player].SC_PersonMoveControlRecord[userPlayerRelativeType])
+                    {
+                        if (tmpPersonMoveControlAssignMode[(int)tmpSetPlayer] && record.Type != NumberChangeRecordThreeVersionType.Assign)
+                            continue;
+
+                        switch (record.Type)
+                        {
+                            case NumberChangeRecordThreeVersionType.Addition:
+                                movPlayerTotal[(int)tmpSetPlayer] += record.Value;
+                                break;
+                            case NumberChangeRecordThreeVersionType.Subtraction:
+                                movPlayerTotal[(int)tmpSetPlayer] -= record.Value;
+                                break;
+                            case NumberChangeRecordThreeVersionType.Assign:
+                                tmpPersonMoveControlAssignMode[(int)tmpSetPlayer] = true;
+                                movPlayerTotal[(int)tmpSetPlayer] = record.Value;
+                                break;
+                        }
+
+                    }
+                }
+            }
+            #endregion
+
+            foreach (var player in System.Enum.GetValues<UserPlayerType>())
+            {
                 switch (PlayerDatas[(int)player].MoveBarSelect)
                 {
                     case MoveBarSelectType.Left:
@@ -354,26 +430,31 @@ namespace unlightvbe_kai_core
             if (movSystemTotal != 0)
             {
                 int newDistance = (int)PlayerDistance + movSystemTotal;
-                PlayerDistance = newDistance switch
+                var tmpNewDistanceType = newDistance switch
                 {
                     > 2 => PlayerDistanceType.Long,
                     < 0 => PlayerDistanceType.Close,
                     _ => (PlayerDistanceType)newDistance
                 };
+
+                ChangePlayerDistance(tmpNewDistanceType, true, TriggerPlayerType.System);
             }
 
             //判斷優先權
-            if (movPlayerTotal[(int)UserPlayerType.Player1] > movPlayerTotal[(int)UserPlayerType.Player2])
+            if (!m_AttackPhaseFirst.RecordValue)
             {
-                AttackPhaseFirst = UserPlayerType.Player1;
-            }
-            else if (movPlayerTotal[(int)UserPlayerType.Player1] < movPlayerTotal[(int)UserPlayerType.Player2])
-            {
-                AttackPhaseFirst = UserPlayerType.Player2;
-            }
-            else
-            {
-                AttackPhaseFirst = (UserPlayerType)Rnd.Next(2);
+                if (movPlayerTotal[(int)UserPlayerType.Player1] > movPlayerTotal[(int)UserPlayerType.Player2])
+                {
+                    m_AttackPhaseFirst.MainProperty = UserPlayerType.Player1;
+                }
+                else if (movPlayerTotal[(int)UserPlayerType.Player1] < movPlayerTotal[(int)UserPlayerType.Player2])
+                {
+                    m_AttackPhaseFirst.MainProperty = UserPlayerType.Player2;
+                }
+                else
+                {
+                    m_AttackPhaseFirst.MainProperty = (UserPlayerType)Rnd.Next(2);
+                }
             }
 
             MultiUIAdapter.UpdateData_All(new()
@@ -455,6 +536,11 @@ namespace unlightvbe_kai_core
 
                 MultiUIAdapter.PhaseStartAttackWithDefense(attackPlyaer);
 
+                //骰數計算
+                UpdatePlayerDiceTotalNumber(attackPlyaer, PhaseType.Attack);
+                MultiUIAdapter.UpdateDiceTotalNumberRelative(attackPlyaer, defensePlayer,
+                    PlayerDatas[(int)attackPlyaer].DiceTotal, PlayerDatas[(int)defensePlayer].DiceTotal);
+
                 //執行階段(17/37)
                 SkillAdapter.StageStart(17, attackPlyaer, true, false);
                 SkillAdapter.StageStart(37, defensePlayer, true, false);
@@ -469,6 +555,9 @@ namespace unlightvbe_kai_core
                 MultiUIAdapter.OpenOppenentPlayingCard(attackPlyaer,
                     CardDecks[GetCardDeckType(defensePlayer, ActionCardLocation.Play)].Select(x => x.Value).ToList());
 
+                //骰數再計算
+                UpdatePlayerDiceTotalNumber(attackPlyaer, PhaseType.Attack);
+
                 //執行階段(10/30)
                 SkillAdapter.StageStart(10, attackPlyaer, true, false);
                 SkillAdapter.StageStart(30, defensePlayer, true, false);
@@ -477,9 +566,6 @@ namespace unlightvbe_kai_core
                 SkillAdapter.StageStart(11, attackPlyaer, true, false);
                 SkillAdapter.StageStart(31, defensePlayer, true, false);
 
-                //骰數再計算
-                UpdatePlayerDiceTotalNumber(attackPlyaer, PhaseType.Attack);
-                //UpdatePlayerDiceTotalNumber(defensePlayer, PhaseType.Defense);
                 MultiUIAdapter.UpdateDiceTotalNumberRelative(attackPlyaer, defensePlayer,
                     PlayerDatas[(int)attackPlyaer].DiceTotal, PlayerDatas[(int)defensePlayer].DiceTotal);
 
@@ -531,7 +617,16 @@ namespace unlightvbe_kai_core
 
                 if (DiceTrueTotal > 0)
                 {
-                    CharacterHPDamage(defensePlayer, PlayerDatas[(int)defensePlayer].CurrentCharacter.Character.VBEID, DiceTrueTotal);
+                    CharacterHPDamage(new()
+                    {
+                        Player = defensePlayer,
+                        CharacterVBEID = PlayerDatas[(int)defensePlayer].CurrentCharacter.Character.VBEID,
+                        DamageNumber = DiceTrueTotal,
+                        DamageType = CharacterHPDamageType.Dice,
+                        IsCallEvent = true,
+                        TriggerPlayerType = TriggerPlayerType.System,
+                        TriggerSkillType = TriggerSkillType.System
+                    });
                 }
 
                 //執行階段(14/34)

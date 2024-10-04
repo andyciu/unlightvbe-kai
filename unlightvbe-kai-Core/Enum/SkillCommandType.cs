@@ -26,24 +26,58 @@
         /// 技能動畫圖像執行
         /// </summary>
         SkillAnimateStartPlay,
+        /// <summary>
+        /// 系統回合數控制
+        /// </summary>
         BattleTurnControl,
+        /// <summary>
+        /// 發布訊息效果執行
+        /// </summary>
         BattleSendMessage,
+        /// <summary>
+        /// 擲骰效果執行
+        /// </summary>
         BattleStartDice,
-        AtkingInformationRecord,
         EventPlayerAllActionOff,
-        EventActiveAIScore,
+        /// <summary>
+        /// 角色相對距離控制
+        /// </summary>
         BattleMoveControl,
+        /// <summary>
+        /// 原應執行之距離變更無效化
+        /// </summary>
         EventMoveActionOff,
+        /// <summary>
+        /// 人物移動階段總移動量控制
+        /// </summary>
         PersonMoveControl,
+        /// <summary>
+        /// 人物角色移動階段行動控制
+        /// </summary>
         PersonMoveActionChange,
+        /// <summary>
+        /// 人物角色優先攻擊控制
+        /// </summary>
         PersonAttackFirstControl,
         /// <summary>
         /// 攻擊/防禦階段系統骰數變化量控制
         /// </summary>
         EventTotalDiceChange,
+        /// <summary>
+        /// 攻擊/防禦階段角色白值能力對骰數變化量控制
+        /// </summary>
         EventPersonAbilityDiceChange,
+        /// <summary>
+        /// 攻擊/防禦階段擲骰前系統總骰數直接控制
+        /// </summary>
         PersonTotalDiceControl,
-        AtkingTrueDiceControl,
+        /// <summary>
+        /// 擲骰後正面骰數控制
+        /// </summary>
+        AttackTrueDiceControl,
+        /// <summary>
+        /// 人物角色血量控制
+        /// </summary>
         PersonBloodControl,
         EventBloodActionOff,
         EventBloodActionChange,

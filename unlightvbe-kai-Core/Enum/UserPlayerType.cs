@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using unlightvbe_kai_core.Enum.SkillCommand;
 
 namespace unlightvbe_kai_core.Enum
 {
@@ -36,6 +37,16 @@ namespace unlightvbe_kai_core.Enum
         public static UserPlayerRelativeType ToRelative(this UserPlayerType player, UserPlayerType currentPlayer)
         {
             return player == currentPlayer ? UserPlayerRelativeType.Self : UserPlayerRelativeType.Opponent;
+        }
+
+        public static TriggerPlayerType ToTriggerPlayerType(this UserPlayerType player)
+        {
+            return player switch
+            {
+                UserPlayerType.Player1 => TriggerPlayerType.Player1,
+                UserPlayerType.Player2 => TriggerPlayerType.Player2,
+                _ => throw new NotImplementedException()
+            };
         }
     }
 }

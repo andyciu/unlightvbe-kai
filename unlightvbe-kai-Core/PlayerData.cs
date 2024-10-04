@@ -28,12 +28,33 @@ namespace unlightvbe_kai_core
         /// <summary>
         /// 執行指令-攻擊/防禦階段系統骰數變化量控制紀錄
         /// </summary>
-        public Dictionary<UserPlayerRelativeType, Dictionary<SkillType, List<EventTotalDiceChangeRecordModel>>> SC_EventTotalDiceChangeRecord { get; set; } = new();
-
+        /// <remarks>
+        /// Record: <br/>
+        /// <list type="number">
+        ///     <item>
+        ///         <term>AssignMode(是否進入指定模式)</term>
+        ///         <description>bool</description>
+        ///     </item>
+        /// </list>
+        /// </remarks>
+        public PropertyWithRecord<Dictionary<UserPlayerRelativeType, Dictionary<SkillType, List<EventTotalDiceChangeRecordModel>>>, bool> SC_EventTotalDiceChangeRecord { get; set; } = new();
         /// <summary>
-        /// 執行指令-攻擊/防禦階段系統骰數變化量控制紀錄-是否進入指定模式
+        /// 執行指令-攻擊/防禦階段角色白值能力對骰數變化量控制紀錄
         /// </summary>
-        public bool SC_EventTotalDiceChangeRecordAssignMode { get; set; }
+        /// <remarks>
+        /// Record: <br/>
+        /// <list type="number">
+        ///     <item>
+        ///         <term>AssignMode(是否進入指定模式)</term>
+        ///         <description>bool</description>
+        ///     </item>
+        /// </list>
+        /// </remarks>
+        public PropertyWithRecord<Dictionary<UserPlayerRelativeType, Dictionary<SkillType, List<EventPersonAbilityDiceChangeRecordModel>>>, bool> SC_EventPersonAbilityDiceChangeRecord { get; set; } = new();
+        /// <summary>
+        /// 執行指令-人物移動階段總移動量控制紀錄
+        /// </summary>
+        public Dictionary<UserPlayerRelativeType, List<PersonMoveControlRecordModel>> SC_PersonMoveControlRecord { get; set; } = new();
         private readonly Dictionary<string, CharacterData> CharacterVBEIDDict = new();
         public PlayerData(Player player, UserPlayerType playerType)
         {
@@ -50,10 +71,13 @@ namespace unlightvbe_kai_core
 
             foreach (var userPlayerRelativeType in System.Enum.GetValues<UserPlayerRelativeType>())
             {
-                SC_EventTotalDiceChangeRecord.Add(userPlayerRelativeType, new());
+                SC_EventTotalDiceChangeRecord.MainProperty.Add(userPlayerRelativeType, new());
+                SC_EventPersonAbilityDiceChangeRecord.MainProperty.Add(userPlayerRelativeType, new());
+                SC_PersonMoveControlRecord.Add(userPlayerRelativeType, new());
                 foreach (var skillType in System.Enum.GetValues<SkillType>())
                 {
-                    SC_EventTotalDiceChangeRecord[userPlayerRelativeType].Add(skillType, new());
+                    SC_EventTotalDiceChangeRecord.MainProperty[userPlayerRelativeType].Add(skillType, new());
+                    SC_EventPersonAbilityDiceChangeRecord.MainProperty[userPlayerRelativeType].Add(skillType, new());
                 }
             }
         }
@@ -66,6 +90,13 @@ namespace unlightvbe_kai_core
                 return characterData;
             }
             return null;
+        }
+
+        public int? GetCharacterDataIndex(string characterVBEID)
+        {
+            var result = CharacterDatas.FindIndex(x => x.Character.VBEID == characterVBEID);
+            if (result == -1) return null;
+            else return result;
         }
     }
 }

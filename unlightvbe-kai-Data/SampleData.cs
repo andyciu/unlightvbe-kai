@@ -1,5 +1,6 @@
 ﻿using unlightvbe_kai_core;
 using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Enum.SkillCommand;
 using unlightvbe_kai_core.Models;
 using unlightvbe_kai_Data.Character;
 
@@ -23,7 +24,7 @@ namespace unlightvbe_kai_Data
                             PlayerDistanceType.Long,
                         },
                 Phase = PhaseType.Move,
-                StageNumber = new() { 44 },
+                StageNumber = new() { 44, 2, 61, 46 },
                 Cards = new List<SkillCardConditionModel> { new()
                 {
                     Scope = SkillCardConditionScopeType.Above,
@@ -33,33 +34,33 @@ namespace unlightvbe_kai_Data
                 Name = "TmpActiveSkill"
             };
 
-            //Characters.Add(new()
-            //{
-            //    Name = "Ria",
-            //    HP = 9,
-            //    ATK = 5,
-            //    DEF = 10,
-            //    VBEID = "S00105",
-            //    EventColour = "357000",
-            //    LevelMain = "LV",
-            //    LevelNum = 5,
-            //    ActiveSkills = new() { skill1 }
-            //});
-            //Characters.Add(new()
-            //{
-            //    Name = "Evarist",
-            //    HP = 12,
-            //    ATK = 7,
-            //    DEF = 7,
-            //    VBEID = "N01105",
-            //    EventColour = "325000",
-            //    LevelMain = "LV",
-            //    LevelNum = 5,
-            //    ActiveSkills = new() { skill1 }
-            //});
+            Characters.Add(new()
+            {
+                Name = "Ria",
+                HP = 9,
+                ATK = 5,
+                DEF = 10,
+                VBEID = "S00105",
+                EventColour = "357000",
+                LevelMain = "LV",
+                LevelNum = 5,
+                ActiveSkills = new() { skill1 }
+            });
+            Characters.Add(new()
+            {
+                Name = "Evarist",
+                HP = 12,
+                ATK = 7,
+                DEF = 7,
+                VBEID = "N01105",
+                EventColour = "325000",
+                LevelMain = "LV",
+                LevelNum = 5,
+                ActiveSkills = new() { skill1 }
+            });
 
-            Characters.Add(Ria.GetCharacter());
-            Characters.Add(Evarist.GetCharacter());
+            //Characters.Add(Ria.GetCharacter());
+            //Characters.Add(Evarist.GetCharacter());
 
             for (int i = 0; i < 2; i++)
             {
@@ -176,14 +177,30 @@ namespace unlightvbe_kai_Data
         {
             var commandFormater = new SkillCommandModelFormatConverter();
 
-            var tmpCheck = args.CheckActiveSkillCondition();
-            if (tmpCheck && !args.CharacterActiveSkillIsActivate[(int)UserPlayerRelativeType.Self][args.SkillIndex])
+            switch (args.StageNum)
             {
-                commandFormater.SkillTurnOnOffWithLineLight(true);
-            }
-            else if (!tmpCheck && args.CharacterActiveSkillIsActivate[(int)UserPlayerRelativeType.Self][args.SkillIndex])
-            {
-                commandFormater.SkillTurnOnOffWithLineLight(false);
+                case 44:
+                    var tmpCheck = args.CheckActiveSkillCondition();
+                    if (tmpCheck && !args.CharacterActiveSkillIsActivate[(int)UserPlayerRelativeType.Self][args.SkillIndex])
+                    {
+                        commandFormater.SkillTurnOnOffWithLineLight(true);
+                    }
+                    else if (!tmpCheck && args.CharacterActiveSkillIsActivate[(int)UserPlayerRelativeType.Self][args.SkillIndex])
+                    {
+                        commandFormater.SkillTurnOnOffWithLineLight(false);
+                    }
+                    break;
+                case 2:
+                    commandFormater.SkillAnimateStartPlay();
+                    break;
+                case 61:
+                    commandFormater.PersonBloodControl(UserPlayerRelativeType.Opponent, 1, PersonBloodControlType.DirectDamage, 5);
+                    commandFormater.PersonBloodControl(UserPlayerRelativeType.Opponent, 1, PersonBloodControlType.Heal, 2);
+                    commandFormater.SkillTurnOnOffWithLineLight(false);
+                    break;
+                case 46:
+
+                    break;
             }
 
             return commandFormater.Output();

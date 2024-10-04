@@ -7,22 +7,21 @@ using System.Threading.Tasks;
 namespace unlightvbe_kai_core.Enum
 {
     /// <summary>
-    /// 玩家角色間相對距離列舉
+    /// 人物角色傷害型態列舉
     /// </summary>
-    public enum PlayerDistanceType
+    public enum CharacterHPDamageType
     {
-        None,
         /// <summary>
-        /// 近距離
+        /// 骰傷
         /// </summary>
-        Close,
+        Dice,
         /// <summary>
-        /// 中距離
+        /// 直接傷害
         /// </summary>
-        Middle,
+        Direct,
         /// <summary>
-        /// 遠距離
+        /// 直接死亡
         /// </summary>
-        Long
+        Death
     }
 }

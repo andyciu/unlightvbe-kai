@@ -4,25 +4,24 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace unlightvbe_kai_core.Enum
+namespace unlightvbe_kai_core.Enum.SkillCommand
 {
     /// <summary>
-    /// 玩家角色間相對距離列舉
+    /// 執行指令-變化量控制紀錄列舉(3種類)
     /// </summary>
-    public enum PlayerDistanceType
+    public enum NumberChangeRecordThreeVersionType
     {
-        None,
         /// <summary>
-        /// 近距離
+        /// 加
         /// </summary>
-        Close,
+        Addition = 1,
         /// <summary>
-        /// 中距離
+        /// 減
         /// </summary>
-        Middle,
+        Subtraction,
         /// <summary>
-        /// 遠距離
+        /// 指定
         /// </summary>
-        Long
+        Assign
     }
 }

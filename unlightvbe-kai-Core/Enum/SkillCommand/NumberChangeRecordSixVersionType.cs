@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 namespace unlightvbe_kai_core.Enum.SkillCommand
 {
     /// <summary>
-    /// 執行指令-攻擊/防禦階段系統骰數變化量控制紀錄列舉
+    /// 執行指令-變化量控制紀錄列舉(6種類)
     /// </summary>
-    public enum EventTotalDiceChangeRecordType
+    public enum NumberChangeRecordSixVersionType
     {
         /// <summary>
         /// 加

@@ -219,6 +219,7 @@ namespace unlightvbe_kai_console
             while (readActionModel == null && !IsOKButtonClick)
             {
                 string tmpstr = string.Empty;
+                ConsoleWriteLine("=======================");
                 while (string.IsNullOrEmpty(tmpstr))
                 {
                     ConsoleWrite("Action(\"Type Message\"): ");
@@ -298,17 +299,36 @@ namespace unlightvbe_kai_console
                         ConsoleWriteLine("SelfPlay=" + PlayCards.Count);
                         ConsoleWriteLine("OpponentHold=" + OpponentHoldCardCount);
                         ConsoleWriteLine("OpponentPlay=" + OpponentPlayCardCount);
+                        if (PhaseType == PhaseType.Attack || PhaseType == PhaseType.Defense)
+                        {
+                            ConsoleWriteLine("SelfDiceTotal=" + DiceTotalNum[(int)UserPlayerRelativeType.Self].ToString());
+                            ConsoleWriteLine("OpponentDiceTotal=" + DiceTotalNum[(int)UserPlayerRelativeType.Opponent].ToString());
+                        }
                         break;
-                    case "SA": //ShowchAracter
+                    case "SA": //ShowCharacter
                         foreach (var playertype in Enum.GetValues<UserPlayerRelativeType>())
                         {
                             int tmpnum = 0;
                             foreach (var characterdata in PlayerDatas[(int)playertype].CharacterDatas)
                             {
-                                ConsoleWriteLine("{0}[{1}]={2}({3}/{4}/{5}/{6})", playertype.ToString(), tmpnum++, characterdata.Character.Name,
-                                    characterdata.Character.VBEID, characterdata.CurrentHP, characterdata.Character.ATK, characterdata.Character.DEF);
+                                ConsoleWriteLine("{0}[{1}] = {2} #{3} ({{{4}/{5}}}/{6}/{7})", playertype.ToString(), tmpnum++, characterdata.Character.Name,
+                                    characterdata.Character.VBEID, characterdata.CurrentHP, characterdata.Character.HP, characterdata.Character.ATK, characterdata.Character.DEF);
                             }
                         }
+                        break;
+                    case "HELP":
+                        ConsoleWriteLine("Command list(Case-insensitive):");
+                        ConsoleWriteLine("CC [card Number] - CardClick");
+                        ConsoleWriteLine("CR [card Number] - CardReverse");
+                        ConsoleWriteLine("BARL - BarMoveLeft");
+                        ConsoleWriteLine("BARR - BarMoveRight");
+                        ConsoleWriteLine("BARS - BarMoveStay");
+                        ConsoleWriteLine("BARC - BarMoveStay");
+                        ConsoleWriteLine("OK - OKButtonClick");
+                        ConsoleWriteLine("SC - ShowInfo(Card)");
+                        ConsoleWriteLine("SI - ShowInfo(Battle)");
+                        ConsoleWriteLine("SA - ShowInfo(Character)");
+                        ConsoleWriteLine("HELP - Show command list");
                         break;
                     default:
                         ConsoleWriteLine("Action Unknown. Please try again.");

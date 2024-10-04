@@ -60,8 +60,8 @@ namespace unlightvbe_kai_Data.Character
                     }
                     break;
                 case 45:
-                    commandFormater.EventTotalDiceChange(UserPlayerRelativeType.Self, EventTotalDiceChangeRecordType.Addition, 6);
-                    commandFormater.EventTotalDiceChange(UserPlayerRelativeType.Opponent, EventTotalDiceChangeRecordType.Subtraction, 3);
+                    commandFormater.EventTotalDiceChange(UserPlayerRelativeType.Self, NumberChangeRecordSixVersionType.Addition, 6);
+                    commandFormater.EventTotalDiceChange(UserPlayerRelativeType.Opponent, NumberChangeRecordSixVersionType.Subtraction, 3);
                     break;
                 case 11:
                     commandFormater.SkillAnimateStartPlay();
