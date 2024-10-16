@@ -19,26 +19,26 @@ namespace unlightvbe_kai_Data.Character
                 EventColour = "325000",
                 LevelMain = "LV",
                 LevelNum = 5,
-                ActiveSkills = new() { ActiveSkillObj_1 }
+                ActiveSkills = [ActiveSkillObj_1]
             };
         }
 
         private static readonly Skill<ActiveSkill> ActiveSkillObj_1 = new(ActiveSkillFuc_1, "PNAKN01101")
         {
-            Distance = new()
-            {
+            Distance =
+            [
                 PlayerDistanceType.Middle,
                 PlayerDistanceType.Close,
                 PlayerDistanceType.Long,
-            },
+            ],
             Phase = PhaseType.Attack,
-            StageNumber = new() { 42, 45, 11 },
-            Cards = new List<SkillCardConditionModel> { new()
+            StageNumber = [42, 45, 11],
+            Cards = [ new()
             {
                 Scope = SkillCardConditionScopeType.Above,
                 CardType = ActionCardType.ATK_Gun,
                 Number = 2
-            }},
+            }],
             Name = "精密射擊"
         };
 
@@ -60,7 +60,7 @@ namespace unlightvbe_kai_Data.Character
                     }
                     break;
                 case 45:
-                    commandFormater.EventTotalDiceChange(UserPlayerRelativeType.Self, NumberChangeRecordSixVersionType.Addition, 4);
+                    commandFormater.EventTotalDiceChange(CommandPlayerRelativeTwoVersionType.Self, NumberChangeRecordSixVersionType.Addition, 4);
                     break;
                 case 11:
                     commandFormater.SkillAnimateStartPlay();

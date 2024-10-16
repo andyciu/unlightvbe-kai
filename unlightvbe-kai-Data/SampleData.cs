@@ -2,35 +2,31 @@
 using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Enum.SkillCommand;
 using unlightvbe_kai_core.Models;
+using unlightvbe_kai_core.Models.StageMessage;
 using unlightvbe_kai_Data.Character;
 
 namespace unlightvbe_kai_Data
 {
     public class SampleData
     {
-        public List<unlightvbe_kai_core.Models.Character> Characters { get; set; } = new();
-        public List<Deck_Sub> Deck_Subs { get; set; } = new();
-        public List<Deck> Decks { get; set; } = new();
-        public List<Player> Players { get; set; } = new();
-        public static readonly Random Rnd = new Random();
+        public List<unlightvbe_kai_core.Models.Character> Characters { get; set; } = [];
+        public List<Deck_Sub> Deck_Subs { get; set; } = [];
+        public List<Deck> Decks { get; set; } = [];
+        public List<Player> Players { get; set; } = [];
+        public static readonly Random Rnd = new();
         public SampleData()
         {
             Skill<ActiveSkill> skill1 = new(TmpActiveSkill, "VBEID001")
             {
-                Distance = new()
-                        {
+                Distance =
+                        [
                             PlayerDistanceType.Middle,
                             PlayerDistanceType.Close,
                             PlayerDistanceType.Long,
-                        },
+                        ],
                 Phase = PhaseType.Move,
-                StageNumber = new() { 44, 2, 61, 46 },
-                Cards = new List<SkillCardConditionModel> { new()
-                {
-                    Scope = SkillCardConditionScopeType.Above,
-                    CardType = ActionCardType.None,
-                    Number = 1
-                } },
+                StageNumber = [94, 2, 61, 46, 48],
+                Cards = [],
                 Name = "TmpActiveSkill"
             };
 
@@ -44,7 +40,7 @@ namespace unlightvbe_kai_Data
                 EventColour = "357000",
                 LevelMain = "LV",
                 LevelNum = 5,
-                ActiveSkills = new() { skill1 }
+                ActiveSkills = [skill1]
             });
             Characters.Add(new()
             {
@@ -56,7 +52,7 @@ namespace unlightvbe_kai_Data
                 EventColour = "325000",
                 LevelMain = "LV",
                 LevelNum = 5,
-                ActiveSkills = new() { skill1 }
+                ActiveSkills = [skill1]
             });
 
             //Characters.Add(Ria.GetCharacter());
@@ -66,14 +62,15 @@ namespace unlightvbe_kai_Data
             {
                 Deck_Subs.Add(new()
                 {
-                    character = Characters[i],
-                    eventCards = GetCardList_Event()
+                    Character = Characters[i],
+                    EventCards = GetCardList_Event()
                 });
 
                 Decks.Add(new()
                 {
+                    Id = i,
                     Name = "D" + i.ToString(),
-                    Deck_Subs = new() { Deck_Subs[i] }
+                    Deck_Subs = [Deck_Subs[i]]
                 });
             }
 
@@ -173,13 +170,13 @@ namespace unlightvbe_kai_Data
             return Characters.Find(x => x.VBEID == VBEID) ?? Characters[0];
         }
 
-        public List<SkillCommandModel> TmpActiveSkill(ActiveSkillArgsModel args)
+        public static List<SkillCommandModel> TmpActiveSkill(ActiveSkillArgsModel args)
         {
             var commandFormater = new SkillCommandModelFormatConverter();
 
             switch (args.StageNum)
             {
-                case 44:
+                case 94:
                     var tmpCheck = args.CheckActiveSkillCondition();
                     if (tmpCheck && !args.CharacterActiveSkillIsActivate[(int)UserPlayerRelativeType.Self][args.SkillIndex])
                     {
@@ -194,12 +191,24 @@ namespace unlightvbe_kai_Data
                     commandFormater.SkillAnimateStartPlay();
                     break;
                 case 61:
-                    commandFormater.PersonBloodControl(UserPlayerRelativeType.Opponent, 1, PersonBloodControlType.DirectDamage, 5);
-                    commandFormater.PersonBloodControl(UserPlayerRelativeType.Opponent, 1, PersonBloodControlType.Heal, 2);
+                    commandFormater.PersonBloodControl(CommandPlayerRelativeTwoVersionType.Opponent, 1, PersonBloodControlType.DirectDamage, 5);
+                    commandFormater.PersonBloodControl(CommandPlayerRelativeTwoVersionType.Opponent, 1, PersonBloodControlType.Heal, 2);
                     commandFormater.SkillTurnOnOffWithLineLight(false);
                     break;
                 case 46:
-
+                    var messageModel46 = (StageMessageModel_46)StageMessageModelFactory.GetModel<StageMessageModel_46>(args.StageMessage)!;
+                    if (messageModel46.TargetPlayer == CommandPlayerRelativeTwoVersionType.Self)
+                    {
+                        commandFormater.EventBloodActionChange(NumberChangeRecordThreeVersionType.Subtraction, 1);
+                        commandFormater.EventBloodReflection(CommandPlayerRelativeTwoVersionType.Opponent, 1, 1);
+                    }
+                    break;
+                case 48:
+                    var messageModel48 = (StageMessageModel_48)StageMessageModelFactory.GetModel<StageMessageModel_48>(args.StageMessage)!;
+                    if (messageModel48.TargetPlayer == CommandPlayerRelativeTwoVersionType.Opponent)
+                    {
+                        commandFormater.EventHealActionOff();
+                    }
                     break;
             }
 

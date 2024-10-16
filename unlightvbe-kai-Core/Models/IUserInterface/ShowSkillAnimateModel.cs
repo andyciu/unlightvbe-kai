@@ -5,6 +5,6 @@ namespace unlightvbe_kai_core.Models.IUserInterface
     public class ShowSkillAnimateModel
     {
         public UserPlayerRelativeType Player { get; set; }
-        public string SkillID { get; set; }
+        public string SkillID { get; set; } = string.Empty;
     }
 }

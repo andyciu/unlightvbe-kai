@@ -1,23 +1,18 @@
 ﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Interface;
+using unlightvbe_kai_core.Models;
 
 namespace unlightvbe_kai_core
 {
     public partial class BattleSystem
     {
-        protected class UserActionProxy : IUserAction
+        protected class UserActionProxy(BattleSystem battleSystem) : IUserAction
         {
-            private BattleSystem BattleSystem;
-            private PlayerData[] playerDatas;
-            public UserActionProxy(BattleSystem battleSystem)
-            {
-                BattleSystem = battleSystem;
-                playerDatas = battleSystem.PlayerDatas;
-            }
+            private PlayerData[] playerDatas = battleSystem.PlayerDatas;
 
             public bool BarMoveChange(UserPlayerType player)
             {
-                if (!playerDatas[(int)player].IsOKButtonSelect && BattleSystem.PlayerVersusMode == PlayerVersusModeType.ThreeOnThree)
+                if (!playerDatas[(int)player].IsOKButtonSelect && battleSystem.PlayerVersusMode == PlayerVersusModeType.ThreeOnThree)
                 {
                     playerDatas[(int)player].MoveBarSelect = MoveBarSelectType.Change;
                     return true;
@@ -61,10 +56,10 @@ namespace unlightvbe_kai_core
                 {
                     try
                     {
-                        if (BattleSystem.CardDeckIndex[cardNumber] == BattleSystem.GetCardDeckType(player, ActionCardLocation.Hold) ||
-                            BattleSystem.CardDeckIndex[cardNumber] == BattleSystem.GetCardDeckType(player, ActionCardLocation.Play))
+                        if (battleSystem.CardDeckIndex[cardNumber] == GetCardDeckType(player, ActionCardLocation.Hold) ||
+                            battleSystem.CardDeckIndex[cardNumber] == GetCardDeckType(player, ActionCardLocation.Play))
                         {
-                            var tmpcard = BattleSystem.CardDecks[BattleSystem.CardDeckIndex[cardNumber]][cardNumber];
+                            var tmpcard = battleSystem.CardDecks[battleSystem.CardDeckIndex[cardNumber]][cardNumber];
                             ActionCardLocation origlocation = tmpcard.Location;
                             ActionCardLocation destlocation = tmpcard.Location == ActionCardLocation.Hold ? ActionCardLocation.Play : ActionCardLocation.Hold;
                             UserActionCardClickType clickType = origlocation == ActionCardLocation.Hold ? UserActionCardClickType.OUT : UserActionCardClickType.IN;
@@ -76,7 +71,7 @@ namespace unlightvbe_kai_core
 
                             tmpcard.Location = destlocation;
 
-                            BattleSystem.DeckCardMove(tmpcard, BattleSystem.GetCardDeckType(player, origlocation), BattleSystem.GetCardDeckType(player, destlocation));
+                            battleSystem.DeckCardMove(tmpcard, GetCardDeckType(player, origlocation), GetCardDeckType(player, destlocation));
 
                             int tmpStageNum = phaseType switch
                             {
@@ -85,11 +80,11 @@ namespace unlightvbe_kai_core
                                 PhaseType.Defense => 43,
                                 _ => throw new NotImplementedException(),
                             };
-                            BattleSystem.SkillAdapter.StageStart(tmpStageNum, player, false, false);
+                            battleSystem.SkillAdapter.StageStart(tmpStageNum, player, false, false);
 
                             if (phaseType == PhaseType.Attack || phaseType == PhaseType.Defense)
                             {
-                                BattleSystem.UpdatePlayerDiceTotalNumber(player, phaseType);
+                                battleSystem.UpdatePlayerDiceTotalNumber(player, phaseType);
                             }
 
                             return clickType;
@@ -113,10 +108,10 @@ namespace unlightvbe_kai_core
                 {
                     try
                     {
-                        if (BattleSystem.CardDeckIndex[cardNumber] == BattleSystem.GetCardDeckType(player, ActionCardLocation.Hold) ||
-                            BattleSystem.CardDeckIndex[cardNumber] == BattleSystem.GetCardDeckType(player, ActionCardLocation.Play))
+                        if (battleSystem.CardDeckIndex[cardNumber] == GetCardDeckType(player, ActionCardLocation.Hold) ||
+                            battleSystem.CardDeckIndex[cardNumber] == GetCardDeckType(player, ActionCardLocation.Play))
                         {
-                            var tmpcard = BattleSystem.CardDecks[BattleSystem.CardDeckIndex[cardNumber]][cardNumber];
+                            var tmpcard = battleSystem.CardDecks[battleSystem.CardDeckIndex[cardNumber]][cardNumber];
 
                             if (tmpcard.Location != ActionCardLocation.Hold && tmpcard.Location != ActionCardLocation.Play)
                             {
@@ -134,12 +129,12 @@ namespace unlightvbe_kai_core
                                     PhaseType.Defense => 43,
                                     _ => throw new NotImplementedException(),
                                 };
-                                BattleSystem.SkillAdapter.StageStart(tmpStageNum, player, false, false);
+                                battleSystem.SkillAdapter.StageStart(tmpStageNum, player, false, false);
                             }
 
                             if (phaseType == PhaseType.Attack || phaseType == PhaseType.Defense)
                             {
-                                BattleSystem.UpdatePlayerDiceTotalNumber(player, phaseType);
+                                battleSystem.UpdatePlayerDiceTotalNumber(player, phaseType);
                             }
 
                             return tmpcard.Location == ActionCardLocation.Hold ? UserActionCardReverseLocation.Hold : UserActionCardReverseLocation.Play;

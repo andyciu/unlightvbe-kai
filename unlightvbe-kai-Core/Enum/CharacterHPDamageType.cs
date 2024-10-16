@@ -8,13 +8,13 @@
         /// <summary>
         /// 骰傷
         /// </summary>
-        Dice,
+        Dice = 1,
         /// <summary>
         /// 直接傷害
         /// </summary>
         Direct,
         /// <summary>
-        /// 直接死亡
+        /// 立即死亡
         /// </summary>
         Death
     }

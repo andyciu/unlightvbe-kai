@@ -2,7 +2,7 @@
 {
     public class Deck_Sub
     {
-        public Character character { get; set; }
-        public List<EventCard>? eventCards { get; set; }
+        public required Character Character { get; set; }
+        public List<EventCard>? EventCards { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace unlightvbe_kai_core
+﻿namespace unlightvbe_kai_core.Models
 {
     /// <summary>
     /// 屬性附加額外紀錄類別

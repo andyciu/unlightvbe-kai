@@ -1,6 +1,4 @@
-﻿using unlightvbe_kai_core.Models;
-
-namespace unlightvbe_kai_core
+﻿namespace unlightvbe_kai_core.Models
 {
     /// <summary>
     /// 角色資料層

@@ -9,7 +9,7 @@ namespace unlightvbe_kai_core.Models
         public string CharacterVBEID { get; set; }
         public int HealNumber { get; set; }
         public bool IsCallEvent { get; set; }
-        public TriggerPlayerType TriggerPlayerType { get; set; }
+        public CommandPlayerType TriggerPlayerType { get; set; }
         public TriggerSkillType TriggerSkillType { get; set; }
     }
 }

@@ -4,12 +4,8 @@ using unlightvbe_kai_core.Models.IUserInterface;
 
 namespace unlightvbe_kai_console
 {
-    public class AIWithConsoleInterface : ConsoleInterface
+    public class AIWithConsoleInterface(string instanceName, Player selfPlayer, Player opponentPlayer) : ConsoleInterface(instanceName, selfPlayer, opponentPlayer)
     {
-        public AIWithConsoleInterface(string instanceName, Player selfPlayer, Player opponentPlayer) :
-            base(instanceName, selfPlayer, opponentPlayer)
-        { }
-
         public override ReadActionModel ReadAction()
         {
             if (PhaseType == PhaseType.Move)

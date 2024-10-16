@@ -1,17 +1,16 @@
 ﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Enum.SkillCommand;
 using unlightvbe_kai_core.Interface;
+using unlightvbe_kai_core.Models;
 
-namespace unlightvbe_kai_core.Models
+namespace unlightvbe_kai_core
 {
     /// <summary>
     /// 執行指令格式轉換器類別
     /// </summary>
     public class SkillCommandModelFormatConverter : ISkillCommandModelFormatConverter
     {
-        private List<SkillCommandModel> skillCommandModels = new();
-        public SkillCommandModelFormatConverter() { }
-
+        private readonly List<SkillCommandModel> skillCommandModels = [];
         /// <summary>
         /// 匯出執行指令集合
         /// </summary>
@@ -119,9 +118,9 @@ namespace unlightvbe_kai_core.Models
         /// <param name="player">目標玩家方</param>
         /// <param name="recordType">變化量控制種類</param>
         /// <param name="value">數值</param>
-        public void EventTotalDiceChange(UserPlayerRelativeType player, NumberChangeRecordSixVersionType recordType, int value)
+        public void EventTotalDiceChange(CommandPlayerRelativeTwoVersionType player, NumberChangeRecordSixVersionType recordType, int value)
         {
-            skillCommandModels.Add(new(SkillCommandType.EventTotalDiceChange, ((int)player + 1).ToString(), ((int)recordType).ToString(), value.ToString()));
+            skillCommandModels.Add(new(SkillCommandType.EventTotalDiceChange, ((int)player).ToString(), ((int)recordType).ToString(), value.ToString()));
         }
 
         /// <summary>
@@ -133,9 +132,9 @@ namespace unlightvbe_kai_core.Models
         /// <param name="player">目標玩家方</param>
         /// <param name="recordType">變化量控制種類</param>
         /// <param name="value">數值</param>
-        public void EventPersonAbilityDiceChange(UserPlayerRelativeType player, NumberChangeRecordThreeVersionType recordType, int value)
+        public void EventPersonAbilityDiceChange(CommandPlayerRelativeTwoVersionType player, NumberChangeRecordThreeVersionType recordType, int value)
         {
-            skillCommandModels.Add(new(SkillCommandType.EventPersonAbilityDiceChange, ((int)player + 1).ToString(), ((int)recordType).ToString(), value.ToString()));
+            skillCommandModels.Add(new(SkillCommandType.EventPersonAbilityDiceChange, ((int)player).ToString(), ((int)recordType).ToString(), value.ToString()));
         }
 
         /// <summary>
@@ -147,9 +146,9 @@ namespace unlightvbe_kai_core.Models
         /// <param name="player">目標玩家方</param>
         /// <param name="recordType">變化量控制種類</param>
         /// <param name="value">數值</param>
-        public void PersonTotalDiceControl(UserPlayerRelativeType player, NumberChangeRecordSixVersionType recordType, int value)
+        public void PersonTotalDiceControl(CommandPlayerRelativeTwoVersionType player, NumberChangeRecordSixVersionType recordType, int value)
         {
-            skillCommandModels.Add(new(SkillCommandType.PersonTotalDiceControl, ((int)player + 1).ToString(), ((int)recordType).ToString(), value.ToString()));
+            skillCommandModels.Add(new(SkillCommandType.PersonTotalDiceControl, ((int)player).ToString(), ((int)recordType).ToString(), value.ToString()));
         }
 
         /// <summary>
@@ -232,9 +231,9 @@ namespace unlightvbe_kai_core.Models
         /// <remarks>
         /// (2/3/4/70)
         /// </remarks>
-        public void PersonMoveControl(UserPlayerRelativeType player, NumberChangeRecordThreeVersionType recordType, int value)
+        public void PersonMoveControl(CommandPlayerRelativeTwoVersionType player, NumberChangeRecordThreeVersionType recordType, int value)
         {
-            skillCommandModels.Add(new(SkillCommandType.PersonMoveControl, ((int)player + 1).ToString(), ((int)recordType).ToString(), value.ToString()));
+            skillCommandModels.Add(new(SkillCommandType.PersonMoveControl, ((int)player).ToString(), ((int)recordType).ToString(), value.ToString()));
         }
 
         /// <summary>
@@ -245,9 +244,9 @@ namespace unlightvbe_kai_core.Models
         /// <remarks>
         /// (2/3/4/70)
         /// </remarks>
-        public void PersonMoveActionChange(UserPlayerRelativeType player, PersonMoveActionType recordType)
+        public void PersonMoveActionChange(CommandPlayerRelativeTwoVersionType player, PersonMoveActionType recordType)
         {
-            skillCommandModels.Add(new(SkillCommandType.PersonMoveActionChange, ((int)player + 1).ToString(), ((int)recordType).ToString()));
+            skillCommandModels.Add(new(SkillCommandType.PersonMoveActionChange, ((int)player).ToString(), ((int)recordType).ToString()));
         }
 
         /// <summary>
@@ -257,9 +256,9 @@ namespace unlightvbe_kai_core.Models
         /// <remarks>
         /// (2/3/4/70/71)
         /// </remarks>
-        public void PersonAttackFirstControl(UserPlayerRelativeType player)
+        public void PersonAttackFirstControl(CommandPlayerRelativeTwoVersionType player)
         {
-            skillCommandModels.Add(new(SkillCommandType.PersonAttackFirstControl, ((int)player + 1).ToString()));
+            skillCommandModels.Add(new(SkillCommandType.PersonAttackFirstControl, ((int)player).ToString()));
         }
 
         /// <summary>
@@ -274,9 +273,85 @@ namespace unlightvbe_kai_core.Models
         /// ※(46[DirectDamage/Death])<br/>
         /// ※(48[Heal])
         /// </remarks>
-        public void PersonBloodControl(UserPlayerRelativeType player, int characterNum, PersonBloodControlType controlType, int value)
+        public void PersonBloodControl(CommandPlayerRelativeTwoVersionType player, int characterNum, PersonBloodControlType controlType, int value)
         {
-            skillCommandModels.Add(new(SkillCommandType.PersonBloodControl, ((int)player + 1).ToString(), characterNum.ToString(), ((int)controlType).ToString(), value.ToString()));
+            skillCommandModels.Add(new(SkillCommandType.PersonBloodControl, ((int)player).ToString(), characterNum.ToString(), ((int)controlType).ToString(), value.ToString()));
+        }
+
+        /// <summary>
+        /// 原應執行之傷害無效化
+        /// </summary>
+        /// <remarks>
+        /// (46)
+        /// </remarks>
+        public void EventBloodActionOff()
+        {
+            skillCommandModels.Add(new(SkillCommandType.EventBloodActionOff));
+        }
+
+        /// <summary>
+        /// 原應執行之傷害效果變更
+        /// </summary>
+        /// <param name="recordType">控制種類</param>
+        /// <param name="value">數值</param>
+        /// <remarks>
+        /// (46)
+        /// </remarks>
+        public void EventBloodActionChange(NumberChangeRecordThreeVersionType recordType, int value)
+        {
+            skillCommandModels.Add(new(SkillCommandType.EventBloodActionChange, ((int)recordType).ToString(), value.ToString()));
+        }
+
+        /// <summary>
+        /// 傷害反射效果執行
+        /// </summary>
+        /// <param name="player">目標玩家方</param>
+        /// <param name="characterNum">目標方角色順序(台上1>台下2/3)</param>
+        /// <param name="value">數值</param>
+        /// <remarks>
+        /// (46/48)
+        /// </remarks>
+        public void EventBloodReflection(CommandPlayerRelativeTwoVersionType player, int characterNum, int value)
+        {
+            skillCommandModels.Add(new(SkillCommandType.EventBloodReflection, ((int)player).ToString(), characterNum.ToString(), value.ToString()));
+        }
+
+        /// <summary>
+        /// 原應執行之回復無效化
+        /// </summary>
+        /// <remarks>
+        /// (48)
+        /// </remarks>
+        public void EventHealActionOff()
+        {
+            skillCommandModels.Add(new(SkillCommandType.EventHealActionOff));
+        }
+
+        /// <summary>
+        /// 原應執行之回復效果變更
+        /// </summary>
+        /// <param name="recordType">控制種類</param>
+        /// <param name="value">數值</param>
+        /// <remarks>
+        /// (48)
+        /// </remarks>
+        public void EventHealActionChange(NumberChangeRecordThreeVersionType recordType, int value)
+        {
+            skillCommandModels.Add(new(SkillCommandType.EventHealActionChange, ((int)recordType).ToString(), value.ToString()));
+        }
+
+        /// <summary>
+        /// 回復反射效果執行
+        /// </summary>
+        /// <param name="player">目標玩家方</param>
+        /// <param name="characterNum">目標方角色順序(台上1>台下2/3)</param>
+        /// <param name="value">數值</param>
+        /// <remarks>
+        /// (46/48)
+        /// </remarks>
+        public void EventHealReflection(CommandPlayerRelativeTwoVersionType player, int characterNum, int value)
+        {
+            skillCommandModels.Add(new(SkillCommandType.EventHealReflection, ((int)player).ToString(), characterNum.ToString(), value.ToString()));
         }
     }
 }

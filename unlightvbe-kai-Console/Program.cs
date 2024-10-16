@@ -18,17 +18,15 @@ namespace unlightvbe_kai_console
             var player1 = data.GetPlayer(1);
             var player2 = data.GetPlayer(2);
 
-            BattleSystem battleSystem = new(player1, player2);
-            battleSystem.SetUserInterface(new ConsoleInterface("1", player1, player2),
-                new AIWithConsoleInterface("2", player2, player1));
-            battleSystem.SetInitialCardDeck(SampleData.GetCardList_Deck());
+            BattleSystem battleSystem = new(player1, player2, new ConsoleInterface("1", player1, player2),
+                new AIWithConsoleInterface("2", player2, player1), SampleData.GetCardList_Deck());
 
             Task.Run(() => { battleSystem.Start(); }).Wait();
         }
         private static void test1()
         {
-            List<Card> cards = new List<Card>
-            {
+            List<Card> cards =
+            [
                 new ActionCard
                 {
                     Number = 1,
@@ -37,7 +35,7 @@ namespace unlightvbe_kai_console
                 {
                     Number= 2,
                 }
-            };
+            ];
 
             foreach (var card in cards)
             {
@@ -64,7 +62,7 @@ namespace unlightvbe_kai_console
 
         private static void Test2_2(Player player)
         {
-            var result = player.Deck.Deck_Subs[0].character.ActiveSkills[0].Function.Invoke(new());
+            var result = player.Deck.Deck_Subs[0].Character.ActiveSkills[0].Function.Invoke(new());
             Console.WriteLine(result?[0].Type.ToString());
         }
     }

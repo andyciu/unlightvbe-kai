@@ -79,12 +79,30 @@
         /// 人物角色血量控制
         /// </summary>
         PersonBloodControl,
+        /// <summary>
+        /// 原應執行之傷害無效化
+        /// </summary>
         EventBloodActionOff,
+        /// <summary>
+        /// 原應執行之傷害效果變更
+        /// </summary>
         EventBloodActionChange,
+        /// <summary>
+        /// 傷害反射效果執行
+        /// </summary>
         EventBloodReflection,
-        EventHPLActionOff,
-        EventHPLActionChange,
-        EventHPLReflection,
+        /// <summary>
+        /// 原應執行之回復無效化
+        /// </summary>
+        EventHealActionOff,
+        /// <summary>
+        /// 原應執行之回復效果變更
+        /// </summary>
+        EventHealActionChange,
+        /// <summary>
+        /// 回復反射效果執行
+        /// </summary>
+        EventHealReflection,
         PersonAtkingOff,
         PersonPassiveOff,
         PersonAtkingOffSelect,

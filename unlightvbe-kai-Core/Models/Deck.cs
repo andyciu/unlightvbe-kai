@@ -2,8 +2,8 @@
 {
     public class Deck
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public List<Deck_Sub> Deck_Subs { get; set; }
+        public required int Id { get; set; }
+        public required string Name { get; set; }
+        public required List<Deck_Sub> Deck_Subs { get; set; }
     }
 }

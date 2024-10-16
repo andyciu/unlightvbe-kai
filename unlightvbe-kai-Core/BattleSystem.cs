@@ -26,11 +26,11 @@ namespace unlightvbe_kai_core
         /// <summary>
         /// 卡牌集合
         /// </summary>
-        protected Dictionary<CardDeckType, Dictionary<int, Card>> CardDecks { get; set; }
+        protected Dictionary<CardDeckType, Dictionary<int, Card>> CardDecks { get; set; } = [];
         /// <summary>
         /// 卡牌集合索引(卡牌編號->對應集合)
         /// </summary>
-        protected Dictionary<int, CardDeckType> CardDeckIndex { get; set; }
+        protected Dictionary<int, CardDeckType> CardDeckIndex { get; set; } = [];
         /// <summary>
         /// 目前回合數
         /// </summary>
@@ -92,7 +92,7 @@ namespace unlightvbe_kai_core
         /// <summary>
         /// 對戰雙方勝負結果
         /// </summary>
-        public ShowJudgmentType[] PlayerJudgment { get; private set; } = { ShowJudgmentType.None, ShowJudgmentType.None };
+        public ShowJudgmentType[] PlayerJudgment { get; private set; } = [ShowJudgmentType.None, ShowJudgmentType.None];
         /// <summary>
         /// 技能執行器
         /// </summary>
@@ -108,7 +108,7 @@ namespace unlightvbe_kai_core
         private static readonly Random Rnd = new(DateTime.Now.Millisecond);
 
 
-        public BattleSystem(Player player1, Player player2)
+        public BattleSystem(Player player1, Player player2, IUserInterfaceAsync userInterface_P1, IUserInterfaceAsync userInterface_P2, List<ActionCard> initialCardList)
         {
             try
             {
@@ -130,33 +130,20 @@ namespace unlightvbe_kai_core
                 //設定技能執行介面
                 SkillAdapter = new SkillAdapterClass(this);
                 SkillCommandProxy = new SkillCommandProxyClass(this);
-                SkillAdapter.SetSkillCommandProxy(SkillCommandProxy);
-                SkillCommandProxy.SetSkillAdapter(SkillAdapter);
+
+                MultiUIAdapter = new(userInterface_P1, userInterface_P2, new UserActionProxy(this));
+
+                InitialCardDeck = initialCardList;
             }
             catch (Exception)
             {
                 throw;
             }
-
-        }
-
-        public void SetUserInterface(IUserInterfaceAsync userInterface_P1, IUserInterfaceAsync userInterface_P2)
-        {
-            PlayerDatas[(int)UserPlayerType.Player1].UserInterface = userInterface_P1;
-            PlayerDatas[(int)UserPlayerType.Player2].UserInterface = userInterface_P2;
-            MultiUIAdapter = new(userInterface_P1, userInterface_P2, new UserActionProxy(this));
-        }
-
-        public void SetInitialCardDeck(List<ActionCard> cardlist)
-        {
-            InitialCardDeck = cardlist;
         }
 
         public void Start()
         {
             if (IsFinish) return;
-            if (MultiUIAdapter == null) throw new Exception("MultiUIAdapter not Set.");
-            if (InitialCardDeck == null) throw new Exception("InitialCardDeck not Set.");
 
             InitialData();
             StartScreenPhase();
@@ -178,13 +165,9 @@ namespace unlightvbe_kai_core
 
         private void InitialData()
         {
-            //CardDeck
-            CardDecks = new Dictionary<CardDeckType, Dictionary<int, Card>>();
-            CardDeckIndex = new Dictionary<int, CardDeckType>();
-
             foreach (var type in System.Enum.GetValues<CardDeckType>())
             {
-                CardDecks.Add(type, new Dictionary<int, Card>());
+                CardDecks.Add(type, []);
             }
 
             ImportActionCardToDeck();
@@ -201,7 +184,7 @@ namespace unlightvbe_kai_core
                 player.HoldMaxCount = 5;
             }
 
-            ChangePlayerDistance(PlayerDistanceType.Middle, false, TriggerPlayerType.System);
+            ChangePlayerDistance(PlayerDistanceType.Middle, false, CommandPlayerType.System);
         }
 
         /// <summary>
@@ -225,8 +208,8 @@ namespace unlightvbe_kai_core
         {
             int waitToDeal_P1 = PlayerDatas[(int)UserPlayerType.Player1].HoldMaxCount - CardDecks[CardDeckType.Hold_P1].Count;
             int waitToDeal_P2 = PlayerDatas[(int)UserPlayerType.Player2].HoldMaxCount - CardDecks[CardDeckType.Hold_P2].Count;
-            List<Card> dealCards_p1 = new List<Card>();
-            List<Card> dealCards_p2 = new List<Card>();
+            List<Card> dealCards_p1 = [];
+            List<Card> dealCards_p2 = [];
             ActionCardOwner dealside = ActionCardOwner.Player1; //目前發牌方
             EventCard[] eventCards = new EventCard[2];
 
@@ -345,6 +328,9 @@ namespace unlightvbe_kai_core
                 Type = PhaseType.Move
             });
 
+            //執行階段(94)
+            SkillAdapter.StageStart(94, UserPlayerType.Player1, false, true);
+
             MultiUIAdapter.MovePhaseReadAction();
 
             //執行階段(2/3/4/70/71)
@@ -364,7 +350,7 @@ namespace unlightvbe_kai_core
                         CharacterVBEID = player.CurrentCharacter.Character.VBEID,
                         HealNumber = 1,
                         IsCallEvent = true,
-                        TriggerPlayerType = TriggerPlayerType.System,
+                        TriggerPlayerType = CommandPlayerType.System,
                         TriggerSkillType = TriggerSkillType.System
                     });
                 }
@@ -372,8 +358,8 @@ namespace unlightvbe_kai_core
 
             //計算加總移動值
             Dictionary<ActionCardType, int>[] cardtotal = new Dictionary<ActionCardType, int>[2];
-            int[] movPlayerTotal = new int[2] { 0, 0 };
-            bool[] tmpPersonMoveControlAssignMode = new bool[2] { false, false };
+            int[] movPlayerTotal = [0, 0];
+            bool[] tmpPersonMoveControlAssignMode = [false, false];
             int movSystemTotal = 0;
 
             foreach (var player in System.Enum.GetValues<UserPlayerType>())
@@ -437,7 +423,7 @@ namespace unlightvbe_kai_core
                     _ => (PlayerDistanceType)newDistance
                 };
 
-                ChangePlayerDistance(tmpNewDistanceType, true, TriggerPlayerType.System);
+                ChangePlayerDistance(tmpNewDistanceType, true, CommandPlayerType.System);
             }
 
             //判斷優先權
@@ -545,6 +531,10 @@ namespace unlightvbe_kai_core
                 SkillAdapter.StageStart(17, attackPlyaer, true, false);
                 SkillAdapter.StageStart(37, defensePlayer, true, false);
 
+                //執行階段(92/93)
+                SkillAdapter.StageStart(92, attackPlyaer, false, false);
+                SkillAdapter.StageStart(93, defensePlayer, false, false);
+
                 //Attack Action
                 MultiUIAdapter.AttackWithDefensePhaseReadAction(attackPlyaer, PhaseType.Attack);
                 MultiUIAdapter.OpenOppenentPlayingCard(defensePlayer,
@@ -624,7 +614,7 @@ namespace unlightvbe_kai_core
                         DamageNumber = DiceTrueTotal,
                         DamageType = CharacterHPDamageType.Dice,
                         IsCallEvent = true,
-                        TriggerPlayerType = TriggerPlayerType.System,
+                        TriggerPlayerType = CommandPlayerType.System,
                         TriggerSkillType = TriggerSkillType.System
                     });
                 }

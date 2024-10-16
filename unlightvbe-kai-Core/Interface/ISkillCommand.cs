@@ -25,5 +25,11 @@ namespace unlightvbe_kai_core.Interface
         public void PersonMoveActionChange(SkillCommandDataModel data);
         public void PersonAttackFirstControl(SkillCommandDataModel data);
         public void PersonBloodControl(SkillCommandDataModel data);
+        public void EventBloodActionOff(SkillCommandDataModel data);
+        public void EventBloodActionChange(SkillCommandDataModel data);
+        public void EventBloodReflection(SkillCommandDataModel data);
+        public void EventHealActionOff(SkillCommandDataModel data);
+        public void EventHealActionChange(SkillCommandDataModel data);
+        public void EventHealReflection(SkillCommandDataModel data);
     }
 }

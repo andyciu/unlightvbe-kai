@@ -129,9 +129,9 @@ namespace unlightvbe_kai_core.Models
         {
             if (!SkillDistance.Any(x => x == PlayerDistance)) return false;
             if (SkillPhase != Phase) return false;
-            List<int> tmpCardNumberEqual = new();
-            List<int> tmpCardNumberCardConditionNone = new();
-            List<SkillCardConditionModel> tmpConditionIndexForCardConditionNone = new();
+            List<int> tmpCardNumberEqual = [];
+            List<int> tmpCardNumberCardConditionNone = [];
+            List<SkillCardConditionModel> tmpConditionIndexForCardConditionNone = [];
 
             for (int i = 0; i < SkillCardCondition.Count; i++)
             {

@@ -16,16 +16,22 @@ namespace unlightvbe_kai_core.Interface
         public void SkillAnimateStartPlay();
         public void BattleTurnControl(NumberChangeRecordTwoVersionType recordType, int value);
         public void BattleSendMessage(string message);
-        public void EventTotalDiceChange(UserPlayerRelativeType player, NumberChangeRecordSixVersionType recordType, int value);
-        public void EventPersonAbilityDiceChange(UserPlayerRelativeType player, NumberChangeRecordThreeVersionType recordType, int value);
-        public void PersonTotalDiceControl(UserPlayerRelativeType player, NumberChangeRecordSixVersionType recordType, int value);
+        public void EventTotalDiceChange(CommandPlayerRelativeTwoVersionType player, NumberChangeRecordSixVersionType recordType, int value);
+        public void EventPersonAbilityDiceChange(CommandPlayerRelativeTwoVersionType player, NumberChangeRecordThreeVersionType recordType, int value);
+        public void PersonTotalDiceControl(CommandPlayerRelativeTwoVersionType player, NumberChangeRecordSixVersionType recordType, int value);
         public void AttackTrueDiceControl(NumberChangeRecordThreeVersionType recordType, int value);
         public void BattleStartDice();
         public void BattleMoveControl(PlayerDistanceType distanceType);
         public void EventMoveActionOff();
-        public void PersonMoveControl(UserPlayerRelativeType player, NumberChangeRecordThreeVersionType recordType, int value);
-        public void PersonMoveActionChange(UserPlayerRelativeType player, PersonMoveActionType recordType);
-        public void PersonAttackFirstControl(UserPlayerRelativeType player);
-        public void PersonBloodControl(UserPlayerRelativeType player, int characterNum, PersonBloodControlType controlType, int value);
+        public void PersonMoveControl(CommandPlayerRelativeTwoVersionType player, NumberChangeRecordThreeVersionType recordType, int value);
+        public void PersonMoveActionChange(CommandPlayerRelativeTwoVersionType player, PersonMoveActionType recordType);
+        public void PersonAttackFirstControl(CommandPlayerRelativeTwoVersionType player);
+        public void PersonBloodControl(CommandPlayerRelativeTwoVersionType player, int characterNum, PersonBloodControlType controlType, int value);
+        public void EventBloodActionOff();
+        public void EventBloodActionChange(NumberChangeRecordThreeVersionType recordType, int value);
+        public void EventBloodReflection(CommandPlayerRelativeTwoVersionType player, int characterNum, int value);
+        public void EventHealActionOff();
+        public void EventHealActionChange(NumberChangeRecordThreeVersionType recordType, int value);
+        public void EventHealReflection(CommandPlayerRelativeTwoVersionType player, int characterNum, int value);
     }
 }

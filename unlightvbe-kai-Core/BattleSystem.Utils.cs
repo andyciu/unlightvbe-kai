@@ -93,7 +93,7 @@ namespace unlightvbe_kai_core
                 var player = PlayerDatas[i];
                 foreach (var sub in player.Player.Deck.Deck_Subs)
                 {
-                    foreach (var card in sub.eventCards)
+                    foreach (var card in sub.EventCards)
                     {
                         CardDeckType cardDeckType = GetCardDeckType((UserPlayerType)i, ActionCardLocation.Deck);
 
@@ -131,7 +131,7 @@ namespace unlightvbe_kai_core
             }
         }
 
-        private EventCard GetDefaultEventCard(int typenum)
+        private static EventCard GetDefaultEventCard(int typenum)
         {
             return typenum switch
             {
@@ -166,7 +166,7 @@ namespace unlightvbe_kai_core
             };
         }
 
-        private CardDeckType GetCardDeckType(ActionCardOwner owner, ActionCardLocation location)
+        private static CardDeckType GetCardDeckType(ActionCardOwner owner, ActionCardLocation location)
         {
             return location switch
             {
@@ -195,7 +195,7 @@ namespace unlightvbe_kai_core
             };
         }
 
-        private CardDeckType GetCardDeckType(UserPlayerType player, ActionCardLocation location)
+        private static CardDeckType GetCardDeckType(UserPlayerType player, ActionCardLocation location)
         {
             return location switch
             {
@@ -424,7 +424,7 @@ namespace unlightvbe_kai_core
         /// </summary>
         /// <param name="diceTotal">總骰數</param>
         /// <returns>擲骰有效數</returns>
-        private int DiceAction(int diceTotal)
+        private static int DiceAction(int diceTotal)
         {
             int result = 0;
 
@@ -473,28 +473,67 @@ namespace unlightvbe_kai_core
         /// </summary>
         private void CharacterHPDamage(CharacterHPDamageDataModel data)
         {
-            var characterData = PlayerDatas[(int)data.Player].GetCharacterData(data.CharacterVBEID);
-            if (characterData == null) throw new Exception("characterVBEID null reference");
-
+            var characterData = PlayerDatas[(int)data.Player].GetCharacterData(data.CharacterVBEID) ?? throw new Exception("characterVBEID null reference");
             int origHP = characterData.CurrentHP;
+            int setDamageNumber = data.DamageNumber;
+            bool tmpEventBloodActionDeathTypeChange = false;
 
-            SkillAdapter.StageStart(46, data.Player, true, true, new string[]
+            if (data.IsCallEvent)
             {
-                ((int)data.Player).ToString(),
-                PlayerDatas[(int)data.Player].GetCharacterDataIndex(data.CharacterVBEID).ToString()!,
-                ((int)data.DamageType).ToString(),
-                data.DamageNumber.ToString(),
-                ((int)data.TriggerPlayerType).ToString(),
-                ((int)data.TriggerSkillType).ToString()
-            });
+                SkillCommandProxy.EventBloodActionRecord.Add(SkillAdapter.StageCallCount + 1, new());
 
-            if (data.DamageType == CharacterHPDamageType.Death)
+                SkillAdapter.StageStart(46, data.Player, true, true,
+                [
+                    ((int)data.Player).ToString(),
+                    PlayerDatas[(int)data.Player].GetCharacterDataIndex(data.CharacterVBEID).ToString()!,
+                    ((int)data.DamageType).ToString(),
+                    data.DamageNumber.ToString(),
+                    ((int)data.TriggerPlayerType).ToString(),
+                    ((int)data.TriggerSkillType).ToString()
+                ]);
+
+                var tmpRecord = SkillCommandProxy.EventBloodActionRecord[SkillAdapter.StageCallCount + 1];
+                SkillCommandProxy.EventBloodActionRecord.Remove(SkillAdapter.StageCallCount + 1);
+
+                if (tmpRecord.MainProperty.Item1) //EventBloodActionOff
+                {
+                    return;
+                }
+                else if (tmpRecord.MainProperty.Item2) //EventBloodActionChange
+                {
+                    switch (tmpRecord.RecordValue.Item1)
+                    {
+                        case NumberChangeRecordThreeVersionType.Addition:
+                            if (data.DamageType != CharacterHPDamageType.Death)
+                            {
+                                setDamageNumber += tmpRecord.RecordValue.Item2;
+                            }
+                            break;
+                        case NumberChangeRecordThreeVersionType.Subtraction:
+                            if (data.DamageType != CharacterHPDamageType.Death)
+                            {
+                                setDamageNumber -= tmpRecord.RecordValue.Item2;
+                            }
+                            break;
+                        case NumberChangeRecordThreeVersionType.Assign:
+                            if (data.DamageType == CharacterHPDamageType.Death)
+                                tmpEventBloodActionDeathTypeChange = true;
+
+                            setDamageNumber = tmpRecord.RecordValue.Item2;
+                            break;
+                    }
+                }
+            }
+
+            if (setDamageNumber < 0) setDamageNumber = 0;
+
+            if (data.DamageType == CharacterHPDamageType.Death && !tmpEventBloodActionDeathTypeChange)
             {
                 characterData.CurrentHP = 0;
             }
             else
             {
-                characterData.CurrentHP -= data.DamageNumber;
+                characterData.CurrentHP -= setDamageNumber;
                 if (characterData.CurrentHP < 0) characterData.CurrentHP = 0;
             }
 
@@ -509,23 +548,52 @@ namespace unlightvbe_kai_core
         /// <param name="healNumber">回復數</param>
         private void CharacterHPHeal(CharacterHPHealDataModel data)
         {
-            var characterData = PlayerDatas[(int)data.Player].GetCharacterData(data.CharacterVBEID);
-            if (characterData == null) throw new Exception("characterVBEID null reference");
-
+            var characterData = PlayerDatas[(int)data.Player].GetCharacterData(data.CharacterVBEID) ?? throw new Exception("characterVBEID null reference");
             if (characterData.CurrentHP < characterData.Character.HP)
             {
                 int origHP = characterData.CurrentHP;
+                int setHealNumber = data.HealNumber;
 
-                SkillAdapter.StageStart(48, data.Player, true, true, new string[]
+                if (data.IsCallEvent)
                 {
-                    ((int)data.Player).ToString(),
-                    PlayerDatas[(int)data.Player].GetCharacterDataIndex(data.CharacterVBEID).ToString()!,
-                    data.HealNumber.ToString(),
-                    ((int)data.TriggerPlayerType).ToString(),
-                    ((int)data.TriggerSkillType).ToString()
-                });
+                    SkillCommandProxy.EventHealActionRecord.Add(SkillAdapter.StageCallCount + 1, new());
 
-                characterData.CurrentHP += data.HealNumber;
+                    SkillAdapter.StageStart(48, data.Player, true, true,
+                    [
+                        ((int)data.Player).ToString(),
+                        PlayerDatas[(int)data.Player].GetCharacterDataIndex(data.CharacterVBEID).ToString()!,
+                        data.HealNumber.ToString(),
+                        ((int)data.TriggerPlayerType).ToString(),
+                        ((int)data.TriggerSkillType).ToString()
+                    ]);
+
+                    var tmpRecord = SkillCommandProxy.EventHealActionRecord[SkillAdapter.StageCallCount + 1];
+                    SkillCommandProxy.EventHealActionRecord.Remove(SkillAdapter.StageCallCount + 1);
+
+                    if (tmpRecord.MainProperty.Item1) //EventHealActionOff
+                    {
+                        return;
+                    }
+                    else if (tmpRecord.MainProperty.Item2) //EventHealActionChange
+                    {
+                        switch (tmpRecord.RecordValue.Item1)
+                        {
+                            case NumberChangeRecordThreeVersionType.Addition:
+                                setHealNumber += tmpRecord.RecordValue.Item2;
+                                break;
+                            case NumberChangeRecordThreeVersionType.Subtraction:
+                                setHealNumber -= tmpRecord.RecordValue.Item2;
+                                break;
+                            case NumberChangeRecordThreeVersionType.Assign:
+                                setHealNumber = tmpRecord.RecordValue.Item2;
+                                break;
+                        }
+                    }
+                }
+
+                if (setHealNumber < 0) setHealNumber = 0;
+
+                characterData.CurrentHP += setHealNumber;
                 if (characterData.CurrentHP > characterData.Character.HP) characterData.CurrentHP = characterData.Character.HP;
 
                 MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPHeal, data.Player, characterData.CurrentHP - origHP, data.CharacterVBEID);
@@ -538,12 +606,12 @@ namespace unlightvbe_kai_core
         /// <param name="newDistance">新設定距離</param>
         /// <param name="isCallEvent">是否觸發執行階段事件(47)</param>
         /// <param name="triggerPlayer">觸發事件方</param>
-        private void ChangePlayerDistance(PlayerDistanceType newDistance, bool isCallEvent, TriggerPlayerType triggerPlayer)
+        private void ChangePlayerDistance(PlayerDistanceType newDistance, bool isCallEvent, CommandPlayerType triggerPlayer)
         {
             m_playerDistance.RecordValue = false;
             if (isCallEvent)
             {
-                SkillAdapter.StageStart(47, triggerPlayer == TriggerPlayerType.System ? AttackPhaseFirst : triggerPlayer.ToUserPlayerType()!.Value, true, true, new string[]
+                SkillAdapter.StageStart(47, triggerPlayer == CommandPlayerType.System ? AttackPhaseFirst : triggerPlayer.ToUserPlayerType()!.Value, true, true, new string[]
                 {
                     ((int)PlayerDistance).ToString(),
                     ((int)newDistance).ToString(),

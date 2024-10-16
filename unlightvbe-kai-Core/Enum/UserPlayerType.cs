@@ -34,14 +34,19 @@ namespace unlightvbe_kai_core.Enum
             return player == currentPlayer ? UserPlayerRelativeType.Self : UserPlayerRelativeType.Opponent;
         }
 
-        public static TriggerPlayerType ToTriggerPlayerType(this UserPlayerType player)
+        public static CommandPlayerType ToTriggerPlayerType(this UserPlayerType player)
         {
             return player switch
             {
-                UserPlayerType.Player1 => TriggerPlayerType.Player1,
-                UserPlayerType.Player2 => TriggerPlayerType.Player2,
+                UserPlayerType.Player1 => CommandPlayerType.Player1,
+                UserPlayerType.Player2 => CommandPlayerType.Player2,
                 _ => throw new NotImplementedException()
             };
+        }
+
+        public static CommandPlayerRelativeTwoVersionType ToCommandPlayerRelativeTwoVersionType(this UserPlayerType player, UserPlayerType currentPlayer)
+        {
+            return player == currentPlayer ? CommandPlayerRelativeTwoVersionType.Self : CommandPlayerRelativeTwoVersionType.Opponent;
         }
     }
 }

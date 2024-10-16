@@ -9,7 +9,7 @@ namespace unlightvbe_kai_core
     {
         protected IUserInterfaceAsync[] UserInterfaces { get; set; } = new IUserInterfaceAsync[2];
         protected IUserAction UserActionProxy { get; set; }
-        private readonly object dataLock = new object();
+        private readonly object dataLock = new();
 
         public MultiUserInterfaceAdapter(IUserInterfaceAsync userInterface_P1, IUserInterfaceAsync userInterface_P2, IUserAction userActionProxy)
         {
@@ -27,7 +27,7 @@ namespace unlightvbe_kai_core
                     PlayerSelf_Id = data.PlayerSelf_Id,
                     PlayerOpponent_Id = data.PlayerOpponent_Id,
                     PlayerSelf_CharacterVBEID = data.PlayerSelf_CharacterVBEID,
-                    PlayerOpponent_CharacterVBEID = new() { data.PlayerOpponent_CharacterVBEID[0] }
+                    PlayerOpponent_CharacterVBEID = [data.PlayerOpponent_CharacterVBEID[0]]
                 });
             });
             Task task2 = Task.Run(() =>
@@ -37,7 +37,7 @@ namespace unlightvbe_kai_core
                     PlayerSelf_Id = data.PlayerOpponent_Id,
                     PlayerOpponent_Id = data.PlayerSelf_Id,
                     PlayerSelf_CharacterVBEID = data.PlayerOpponent_CharacterVBEID,
-                    PlayerOpponent_CharacterVBEID = new() { data.PlayerSelf_CharacterVBEID[0] }
+                    PlayerOpponent_CharacterVBEID = [data.PlayerSelf_CharacterVBEID[0]]
                 });
             });
             Task.WhenAll(task1, task2).Wait();
@@ -101,8 +101,8 @@ namespace unlightvbe_kai_core
             {
                 UserInterfaces[(int)UserPlayerType.Player1].DrawEventCard(new()
                 {
-                    SelfCards = new List<CardModel>()
-                    {
+                    SelfCards =
+                    [
                         new CardModel
                         {
                             UpperType = card_p1.UpperType,
@@ -113,7 +113,7 @@ namespace unlightvbe_kai_core
                             Owner = ActionCardRelativeOwner.Self,
                             Number = card_p1.Number,
                         }
-                    },
+                    ],
                     OpponentCardCount = 1,
                 });
             });
@@ -121,8 +121,8 @@ namespace unlightvbe_kai_core
             {
                 UserInterfaces[(int)UserPlayerType.Player2].DrawEventCard(new()
                 {
-                    SelfCards = new List<CardModel>()
-                    {
+                    SelfCards =
+                    [
                         new CardModel
                         {
                             UpperType = card_p2.UpperType,
@@ -133,7 +133,7 @@ namespace unlightvbe_kai_core
                             Owner = ActionCardRelativeOwner.Self,
                             Number = card_p2.Number,
                         }
-                    },
+                    ],
                     OpponentCardCount = 1,
                 });
             });
@@ -331,11 +331,11 @@ namespace unlightvbe_kai_core
                     {
                         if (tmpAction.Type == UserActionType.CardClick || tmpAction.Type == UserActionType.CardReverse)
                         {
-                            result = method.Invoke(UserActionProxy, new object[] { player, tmpAction.Value, phaseType });
+                            result = method.Invoke(UserActionProxy, [player, tmpAction.Value, phaseType]);
                         }
                         else if (phaseType == PhaseType.Move || tmpAction.Type == UserActionType.OKButtonClick)
                         {
-                            result = method.Invoke(UserActionProxy, new object[] { player });
+                            result = method.Invoke(UserActionProxy, [player]);
                         }
                     }
                 }

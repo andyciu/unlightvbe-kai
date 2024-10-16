@@ -11,23 +11,13 @@ namespace unlightvbe_kai_core
         /// <summary>
         /// 技能執行器類別
         /// </summary>
-        protected class SkillAdapterClass : ISkillAdapter
+        protected class SkillAdapterClass(BattleSystem battleSystem) : ISkillAdapter
         {
-            private BattleSystem BattleSystem;
-            private PlayerData[] playerDatas;
-            private ISkillCommandProxy SkillCommandProxy;
-
-            public SkillAdapterClass(BattleSystem battleSystem)
-            {
-                BattleSystem = battleSystem;
-                playerDatas = battleSystem.PlayerDatas;
-            }
-
-            public void SetSkillCommandProxy(ISkillCommandProxy skillCommandProxy)
-            {
-                SkillCommandProxy = skillCommandProxy;
-            }
-
+            private PlayerData[] playerDatas = battleSystem.PlayerDatas;
+            /// <summary>
+            /// 執行階段階層計數
+            /// </summary>
+            public int StageCallCount { get; private set; }
             /// <summary>
             /// 開始執行階段程序
             /// </summary>
@@ -50,6 +40,8 @@ namespace unlightvbe_kai_core
             /// <param name="stageMessage">執行階段多用途紀錄資訊</param>
             public void StageStart(int stageNum, UserPlayerType startPlayer, bool isAuthMode, bool isMulti, string[]? stageMessage)
             {
+                StageCallCount++;
+
                 for (int i = 0; i < 2; i++)
                 {
                     UserPlayerType player;
@@ -82,12 +74,14 @@ namespace unlightvbe_kai_core
                                     CharacterBattleIndex = j,
                                     IsAuthMode = isAuthMode
                                 };
-                                SkillCommandProxy.ExecuteCommands(data, commandresult);
+                                battleSystem.SkillCommandProxy.ExecuteCommands(data, commandresult);
                             }
                             skillIndex++;
                         }
                     }
                 }
+
+                StageCallCount--;
             }
 
             /// <summary>
@@ -114,6 +108,8 @@ namespace unlightvbe_kai_core
             /// <param name="stageMessage">執行階段多用途紀錄資訊</param>
             public void StageStartSkillOnly(int stageNum, UserPlayerType player, int characterBattleIndex, SkillType skillType, int skillIndex, string[]? stageMessage)
             {
+                StageCallCount++;
+
                 var characterData = playerDatas[(int)player].CharacterDatas[characterBattleIndex];
                 switch (skillType)
                 {
@@ -133,10 +129,12 @@ namespace unlightvbe_kai_core
                                 CharacterBattleIndex = characterBattleIndex,
                                 IsAuthMode = true
                             };
-                            SkillCommandProxy.ExecuteCommands(data, commandresult);
+                            battleSystem.SkillCommandProxy.ExecuteCommands(data, commandresult);
                         }
                         break;
                 }
+
+                StageCallCount--;
             }
 
             /// <summary>
@@ -161,22 +159,22 @@ namespace unlightvbe_kai_core
                 result.CharacterBattleIndex = characterBattleIndex;
 
                 result.HoldCardCount = new int[2];
-                result.HoldCardCount[0] = BattleSystem.CardDecks[BattleSystem.GetCardDeckType(startPlayer, ActionCardLocation.Hold)].Count;
-                result.HoldCardCount[1] = BattleSystem.CardDecks[BattleSystem.GetCardDeckType(oppenentPlayer, ActionCardLocation.Hold)].Count;
+                result.HoldCardCount[0] = battleSystem.CardDecks[GetCardDeckType(startPlayer, ActionCardLocation.Hold)].Count;
+                result.HoldCardCount[1] = battleSystem.CardDecks[GetCardDeckType(oppenentPlayer, ActionCardLocation.Hold)].Count;
 
                 result.PlayCardCount = new int[2];
-                result.PlayCardCount[0] = BattleSystem.CardDecks[BattleSystem.GetCardDeckType(startPlayer, ActionCardLocation.Play)].Count;
-                result.PlayCardCount[1] = BattleSystem.CardDecks[BattleSystem.GetCardDeckType(oppenentPlayer, ActionCardLocation.Play)].Count;
+                result.PlayCardCount[0] = battleSystem.CardDecks[GetCardDeckType(startPlayer, ActionCardLocation.Play)].Count;
+                result.PlayCardCount[1] = battleSystem.CardDecks[GetCardDeckType(oppenentPlayer, ActionCardLocation.Play)].Count;
 
                 result.DiceTotal = new int[2];
                 result.DiceTotal[0] = playerDatas[(int)startPlayer].DiceTotal;
                 result.DiceTotal[1] = playerDatas[(int)oppenentPlayer].DiceTotal;
 
                 result.DiceTrue = new int[2];
-                result.DiceTrue[0] = BattleSystem.DiceTrue[(int)startPlayer];
-                result.DiceTrue[1] = BattleSystem.DiceTrue[(int)oppenentPlayer];
+                result.DiceTrue[0] = battleSystem.DiceTrue[(int)startPlayer];
+                result.DiceTrue[1] = battleSystem.DiceTrue[(int)oppenentPlayer];
 
-                result.DiceTrueTotal = BattleSystem.DiceTrueTotal;
+                result.DiceTrueTotal = battleSystem.DiceTrueTotal;
 
                 result.CharacterActiveSkillIsActivate = new bool[2][];
                 result.CharacterActiveSkillIsActivate[0] = playerDatas[(int)startPlayer].CharacterDatas[characterBattleIndex].ActiveSkillIsActivate.ToArray();
@@ -194,15 +192,15 @@ namespace unlightvbe_kai_core
                 result.CharacterPassiveSkillTurnOnCount[0] = playerDatas[(int)startPlayer].CharacterDatas[characterBattleIndex].PassiveSkillTurnOnCount.ToArray();
                 result.CharacterPassiveSkillTurnOnCount[1] = playerDatas[(int)oppenentPlayer].CharacterDatas[characterBattleIndex].PassiveSkillTurnOnCount.ToArray();
 
-                result.PlayerDistance = BattleSystem.PlayerDistance;
+                result.PlayerDistance = battleSystem.PlayerDistance;
 
-                result.TurnNum = BattleSystem.TurnNum;
+                result.TurnNum = battleSystem.TurnNum;
 
-                result.DeckNum = BattleSystem.CardDecks[CardDeckType.Deck].Count;
+                result.DeckNum = battleSystem.CardDecks[CardDeckType.Deck].Count;
 
-                result.Phase = BattleSystem.Phase[(int)startPlayer];
+                result.Phase = battleSystem.Phase[(int)startPlayer];
 
-                result.AttackPhaseFirst = BattleSystem.AttackPhaseFirst.ToRelative(startPlayer);
+                result.AttackPhaseFirst = battleSystem.AttackPhaseFirst.ToRelative(startPlayer);
 
                 result.CharacterCount = new int[2];
                 result.CharacterCount[0] = playerDatas[(int)startPlayer].CharacterDatas.Count;
@@ -213,10 +211,10 @@ namespace unlightvbe_kai_core
                 result.PlayerHoldMaxCount[1] = playerDatas[(int)oppenentPlayer].HoldMaxCount;
 
                 result.ActionCardTotal = new Dictionary<ActionCardType, int>[2];
-                result.ActionCardTotal[0] = BattleSystem.GetCardTotalNumber(startPlayer, ActionCardLocation.Play);
-                result.ActionCardTotal[1] = BattleSystem.GetCardTotalNumber(oppenentPlayer, ActionCardLocation.Play);
+                result.ActionCardTotal[0] = battleSystem.GetCardTotalNumber(startPlayer, ActionCardLocation.Play);
+                result.ActionCardTotal[1] = battleSystem.GetCardTotalNumber(oppenentPlayer, ActionCardLocation.Play);
 
-                result.CardDecks = BattleSystem.CardDecks.SelectMany(x => new[]
+                result.CardDecks = battleSystem.CardDecks.SelectMany(x => new[]
                 {(
                     x.Key.ToRelative(startPlayer), x.Value.SelectMany(u => new[]
                         {(
@@ -235,7 +233,7 @@ namespace unlightvbe_kai_core
                 )}
                 ).ToDictionary(n => n.Item1, n => n.Item2);
 
-                result.CardDeckIndex = BattleSystem.CardDeckIndex.SelectMany(x => new[]
+                result.CardDeckIndex = battleSystem.CardDeckIndex.SelectMany(x => new[]
                 {(
                     x.Key, x.Value.ToRelative(startPlayer)
                 )}
@@ -253,8 +251,8 @@ namespace unlightvbe_kai_core
 
             public static SkillStageType GetSkillStageType(int stageNum)
             {
-                int[] stageTypeSpecial = new int[] { 42, 43, 44, 45, 92, 93, 94, 99 };
-                int[] stageTypeEvent = new int[] { 41, 46, 47, 48, 49, 61, 62, 72, 73, 74, 75, 76, 77, 101, 102, 103, 104, 105, 106, 107 };
+                int[] stageTypeSpecial = [42, 43, 44, 45, 92, 93, 94, 99];
+                int[] stageTypeEvent = [41, 46, 47, 48, 49, 61, 62, 72, 73, 74, 75, 76, 77, 101, 102, 103, 104, 105, 106, 107];
 
                 if (stageTypeSpecial.Any(x => x == stageNum)) return SkillStageType.Special;
                 else if (stageTypeEvent.Any(x => x == stageNum)) return SkillStageType.Event;
@@ -275,12 +273,16 @@ namespace unlightvbe_kai_core
 
                 switch (stageNum)
                 {
-                    case 46: //PersonBloodControl
-                        resultMessage[0] = ((int)((UserPlayerType)Convert.ToInt32(message[0])).ToRelative(startPlayer)).ToString();
-                        resultMessage[4] = ((int)((TriggerPlayerType)Convert.ToInt32(message[4])).ToRelative(startPlayer)).ToString();
+                    case 46: //PersonBloodControl[DirectDamage/Death]
+                        resultMessage[0] = ((int)((UserPlayerType)Convert.ToInt32(message[0])).ToCommandPlayerRelativeTwoVersionType(startPlayer)).ToString();
+                        resultMessage[4] = ((int)((CommandPlayerType)Convert.ToInt32(message[4])).ToRelative(startPlayer)).ToString();
                         break;
                     case 47: //BattleMoveControl
-                        resultMessage[2] = ((int)((TriggerPlayerType)Convert.ToInt32(message[2])).ToRelative(startPlayer)).ToString();
+                        resultMessage[2] = ((int)((CommandPlayerType)Convert.ToInt32(message[2])).ToRelative(startPlayer)).ToString();
+                        break;
+                    case 48: //PersonBloodControl[Heal]
+                        resultMessage[0] = ((int)((UserPlayerType)Convert.ToInt32(message[0])).ToCommandPlayerRelativeTwoVersionType(startPlayer)).ToString();
+                        resultMessage[3] = ((int)((CommandPlayerType)Convert.ToInt32(message[3])).ToRelative(startPlayer)).ToString();
                         break;
                     case 62: //BattleStartDice
                         resultMessage[0] = message[(int)startPlayer.ToRelative(UserPlayerType.Player1)];

@@ -9,14 +9,14 @@ namespace unlightvbe_kai_console
     {
         protected class CharacterData
         {
-            public Character Character { get; set; }
+            public required Character Character { get; set; }
             public int CurrentHP { get; set; }
         }
 
         protected class PlayerData
         {
-            public Player Player { get; set; }
-            public List<CharacterData> CharacterDatas { get; set; }
+            public required Player Player { get; set; }
+            public required List<CharacterData> CharacterDatas { get; set; }
         }
 
         /// <summary>
@@ -27,15 +27,15 @@ namespace unlightvbe_kai_console
         /// <summary>
         /// 手牌清單
         /// </summary>
-        protected List<CardModel> HoldCards = new();
+        protected List<CardModel> HoldCards = [];
         /// <summary>
         /// 出牌清單
         /// </summary>
-        protected List<CardModel> PlayCards = new();
+        protected List<CardModel> PlayCards = [];
         /// <summary>
         /// 對手出牌清單
         /// </summary>
-        protected List<CardModel> OpponentPlayCards = new();
+        protected List<CardModel> OpponentPlayCards = [];
         /// <summary>
         /// 對手手牌數量
         /// </summary>
@@ -112,8 +112,8 @@ namespace unlightvbe_kai_console
                 Player = selfPlayer,
                 CharacterDatas = selfPlayer.Deck.Deck_Subs.Select(x => new CharacterData()
                 {
-                    Character = x.character,
-                    CurrentHP = x.character.HP
+                    Character = x.Character,
+                    CurrentHP = x.Character.HP
                 }).ToList(),
             };
             PlayerDatas[(int)UserPlayerRelativeType.Opponent] = new()
@@ -121,8 +121,8 @@ namespace unlightvbe_kai_console
                 Player = opponentPlayer,
                 CharacterDatas = opponentPlayer.Deck.Deck_Subs.Select(x => new CharacterData()
                 {
-                    Character = x.character,
-                    CurrentHP = x.character.HP
+                    Character = x.Character,
+                    CurrentHP = x.Character.HP
                 }).ToList(),
             };
         }
@@ -218,7 +218,7 @@ namespace unlightvbe_kai_console
 
             while (readActionModel == null && !IsOKButtonClick)
             {
-                string tmpstr = string.Empty;
+                string? tmpstr = string.Empty;
                 ConsoleWriteLine("=======================");
                 while (string.IsNullOrEmpty(tmpstr))
                 {
@@ -664,7 +664,7 @@ namespace unlightvbe_kai_console
 
             while (changeCharacterActionModel == null)
             {
-                string tmpstr = string.Empty;
+                string? tmpstr = string.Empty;
                 int tmpnum = 0;
 
                 ConsoleWriteLine("ChangeCharacterAction");

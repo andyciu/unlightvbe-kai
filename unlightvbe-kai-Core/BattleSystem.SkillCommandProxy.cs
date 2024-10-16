@@ -11,23 +11,47 @@ namespace unlightvbe_kai_core
         /// <summary>
         /// 技能執行指令解釋器類別
         /// </summary>
-        protected class SkillCommandProxyClass : ISkillCommand, ISkillCommandProxy
+        protected class SkillCommandProxyClass(BattleSystem battleSystem) : ISkillCommand, ISkillCommandProxy
         {
-            private BattleSystem BattleSystem;
-            private PlayerData[] playerDatas;
-            private ISkillAdapter skillAdapter;
-
-            public SkillCommandProxyClass(BattleSystem battleSystem)
-            {
-                BattleSystem = battleSystem;
-                playerDatas = battleSystem.PlayerDatas;
-            }
-
-            public void SetSkillAdapter(ISkillAdapter skillAdapter)
-            {
-                this.skillAdapter = skillAdapter;
-            }
-
+            private PlayerData[] playerDatas = battleSystem.PlayerDatas;
+            /// /// <summary>
+            /// 執行階段階層計數參考
+            /// </summary>
+            private int SkillStageCallCount => battleSystem.SkillAdapter.StageCallCount;
+            /// <summary>
+            /// 人物角色血量控制觸發事件(46)反映紀錄
+            /// </summary>
+            /// <remarks>
+            /// Record: <br/>
+            /// <list type="number">
+            ///     <item>
+            ///         <term>EventBloodActionOff</term>
+            ///         <description>[MainProperty]bool(0)</description>
+            ///     </item>
+            ///     <item>
+            ///         <term>EventBloodActionChange</term>
+            ///         <description>[MainProperty]bool(1)/Record</description>
+            ///     </item>
+            /// </list>
+            /// </remarks>
+            public Dictionary<int, PropertyWithRecord<(bool, bool), (NumberChangeRecordThreeVersionType, int)>> EventBloodActionRecord { get; set; } = [];
+            /// <summary>
+            /// 人物角色血量控制觸發事件(48)反映紀錄
+            /// </summary>
+            /// <remarks>
+            /// Record: <br/>
+            /// <list type="number">
+            ///     <item>
+            ///         <term>EventHealActionOff</term>
+            ///         <description>[MainProperty]bool(0)</description>
+            ///     </item>
+            ///     <item>
+            ///         <term>EventHealActionChange</term>
+            ///         <description>[MainProperty]bool(1)/Record</description>
+            ///     </item>
+            /// </list>
+            /// </remarks>
+            public Dictionary<int, PropertyWithRecord<(bool, bool), (NumberChangeRecordThreeVersionType, int)>> EventHealActionRecord { get; set; } = [];
             /// <summary>
             /// 執行指令呼叫執行
             /// </summary>
@@ -52,7 +76,7 @@ namespace unlightvbe_kai_core
                             CharacterBattleIndex = data.CharacterBattleIndex,
                             Message = command.Message
                         };
-                        method.Invoke(this, new object[] { methodData });
+                        method.Invoke(this, [methodData]);
                     }
                 }
             }
@@ -93,12 +117,12 @@ namespace unlightvbe_kai_core
 
                 if (data.SkillType == SkillType.ActiveSkill)
                 {
-                    BattleSystem.MultiUIAdapter.ActiveSkillLineLight(data.Player, data.SkillIndex,
+                    battleSystem.MultiUIAdapter.ActiveSkillLineLight(data.Player, data.SkillIndex,
                     data.Message[0] == "1");
                 }
                 else if (data.SkillType == SkillType.PassiveSkill)
                 {
-                    BattleSystem.MultiUIAdapter.UpdateDataRelative(
+                    battleSystem.MultiUIAdapter.UpdateDataRelative(
                         UpdateDataRelativeType.PassiveSkillLineLight,
                         data.Player,
                         data.SkillIndex,
@@ -145,11 +169,11 @@ namespace unlightvbe_kai_core
                 switch (data.Message[0])
                 {
                     case "1": //ActiveSkill
-                        BattleSystem.MultiUIAdapter.ActiveSkillLineLight(data.Player, Convert.ToInt32(data.Message[1]) - 1,
+                        battleSystem.MultiUIAdapter.ActiveSkillLineLight(data.Player, Convert.ToInt32(data.Message[1]) - 1,
                             data.Message[2] == "1");
                         break;
                     case "2": //PassiveSkill
-                        BattleSystem.MultiUIAdapter.UpdateDataRelative(
+                        battleSystem.MultiUIAdapter.UpdateDataRelative(
                             UpdateDataRelativeType.PassiveSkillLineLight,
                             data.Player,
                             Convert.ToInt32(data.Message[1]) - 1,
@@ -195,9 +219,9 @@ namespace unlightvbe_kai_core
                     data.StageNum == 13 || data.StageNum == 33)
                 { CommandExportException(); return; }
 
-                BattleSystem.MultiUIAdapter.ShowSkillAnimate(data.Player, data.SkillID);
+                battleSystem.MultiUIAdapter.ShowSkillAnimate(data.Player, data.SkillID);
 
-                BattleSystem.SkillAdapter.StageStartSkillOnly(61, data.Player, data.CharacterBattleIndex, data.SkillType, data.SkillIndex);
+                battleSystem.SkillAdapter.StageStartSkillOnly(61, data.Player, data.CharacterBattleIndex, data.SkillType, data.SkillIndex);
             }
 
             /// <summary>
@@ -209,7 +233,8 @@ namespace unlightvbe_kai_core
                 if (data.Message == null || data.Message.Length != 3 || data.StageNum != 45)
                 { CommandExportException(); return; }
 
-                var setPlayer = data.Message[0] == "1" ? data.Player : data.Player.GetOppenentPlayer();
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
 
                 playerDatas[(int)setPlayer].SC_EventTotalDiceChangeRecord.MainProperty[setPlayer.ToRelative(data.Player)][data.SkillType].Add(new()
                 {
@@ -227,7 +252,8 @@ namespace unlightvbe_kai_core
                 if (data.Message == null || data.Message.Length != 3 || data.StageNum != 45)
                 { CommandExportException(); return; }
 
-                var setPlayer = data.Message[0] == "1" ? data.Player : data.Player.GetOppenentPlayer();
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
 
                 playerDatas[(int)setPlayer].SC_EventPersonAbilityDiceChangeRecord.MainProperty[setPlayer.ToRelative(data.Player)][data.SkillType].Add(new()
                 {
@@ -246,7 +272,9 @@ namespace unlightvbe_kai_core
                     !(new int[] { 10, 11, 30, 31 }).Any(x => x == data.StageNum))
                 { CommandExportException(); return; }
 
-                var setPlayer = data.Message[0] == "1" ? data.Player : data.Player.GetOppenentPlayer();
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
+
                 switch ((NumberChangeRecordSixVersionType)Convert.ToInt32(data.Message[1]))
                 {
                     case NumberChangeRecordSixVersionType.Addition:
@@ -283,13 +311,13 @@ namespace unlightvbe_kai_core
                 switch ((NumberChangeRecordThreeVersionType)Convert.ToInt32(data.Message[0]))
                 {
                     case NumberChangeRecordThreeVersionType.Addition:
-                        BattleSystem.DiceTrueTotal += Convert.ToInt32(data.Message[1]);
+                        battleSystem.DiceTrueTotal += Convert.ToInt32(data.Message[1]);
                         break;
                     case NumberChangeRecordThreeVersionType.Subtraction:
-                        BattleSystem.DiceTrueTotal -= Convert.ToInt32(data.Message[1]);
+                        battleSystem.DiceTrueTotal -= Convert.ToInt32(data.Message[1]);
                         break;
                     case NumberChangeRecordThreeVersionType.Assign:
-                        BattleSystem.DiceTrueTotal = Convert.ToInt32(data.Message[1]);
+                        battleSystem.DiceTrueTotal = Convert.ToInt32(data.Message[1]);
                         break;
                 }
             }
@@ -307,17 +335,17 @@ namespace unlightvbe_kai_core
                 switch ((NumberChangeRecordTwoVersionType)Convert.ToInt32(data.Message[0]))
                 {
                     case NumberChangeRecordTwoVersionType.Addition:
-                        BattleSystem.TurnNum += Convert.ToInt32(data.Message[1]);
+                        battleSystem.TurnNum += Convert.ToInt32(data.Message[1]);
                         break;
                     case NumberChangeRecordTwoVersionType.Subtraction:
-                        BattleSystem.TurnNum -= Convert.ToInt32(data.Message[1]);
+                        battleSystem.TurnNum -= Convert.ToInt32(data.Message[1]);
                         break;
                 }
 
-                BattleSystem.MultiUIAdapter.UpdateData_All(new()
+                battleSystem.MultiUIAdapter.UpdateData_All(new()
                 {
                     Type = UpdateDataType.TurnNumber,
-                    Value = BattleSystem.TurnNum
+                    Value = battleSystem.TurnNum
                 });
             }
 
@@ -330,7 +358,7 @@ namespace unlightvbe_kai_core
                 if (data.Message == null || data.Message.Length != 1 || data.StageNum == 99)
                 { CommandExportException(); return; }
 
-                BattleSystem.MultiUIAdapter.ShowBattleMessage(data.Message[0]);
+                battleSystem.MultiUIAdapter.ShowBattleMessage(data.Message[0]);
             }
 
             /// <summary>
@@ -349,23 +377,23 @@ namespace unlightvbe_kai_core
                 var tmpDiceTrue = new int[2];
                 for (int i = 0; i < playerDatas.Length; i++)
                 {
-                    tmpDiceTrue[i] = BattleSystem.DiceAction(playerDatas[i].DiceTotal);
+                    tmpDiceTrue[i] = DiceAction(playerDatas[i].DiceTotal);
                 }
                 //傷害計算
                 UserPlayerType attackPlyaer, defensePlayer;
-                attackPlyaer = BattleSystem.Phase[(int)UserPlayerType.Player1] == PhaseType.Attack ? UserPlayerType.Player1 : UserPlayerType.Player2;
+                attackPlyaer = battleSystem.Phase[(int)UserPlayerType.Player1] == PhaseType.Attack ? UserPlayerType.Player1 : UserPlayerType.Player2;
                 defensePlayer = attackPlyaer.GetOppenentPlayer();
 
                 var tmpDiceTrueTotal = tmpDiceTrue[(int)attackPlyaer] - tmpDiceTrue[(int)defensePlayer];
 
-                skillAdapter.StageStartSkillOnly(62, data.Player, data.CharacterBattleIndex, data.SkillType, data.SkillIndex,
-                    new string[] {
+                battleSystem.SkillAdapter.StageStartSkillOnly(62, data.Player, data.CharacterBattleIndex, data.SkillType, data.SkillIndex,
+                    [
                         playerDatas[(int)UserPlayerType.Player1].DiceTotal.ToString(),
                         playerDatas[(int)UserPlayerType.Player2].DiceTotal.ToString(),
                         tmpDiceTrue[(int)UserPlayerType.Player1].ToString(),
                         tmpDiceTrue[(int)UserPlayerType.Player2].ToString(),
                         tmpDiceTrueTotal.ToString()
-                    });
+                    ]);
             }
 
             /// <summary>
@@ -383,7 +411,7 @@ namespace unlightvbe_kai_core
 
                 var newDistance = (PlayerDistanceType)Convert.ToInt32(data.Message[0]);
 
-                BattleSystem.ChangePlayerDistance(newDistance, true, data.Player.ToTriggerPlayerType());
+                battleSystem.ChangePlayerDistance(newDistance, true, data.Player.ToTriggerPlayerType());
             }
 
             /// <summary>
@@ -395,7 +423,7 @@ namespace unlightvbe_kai_core
                 if (data.StageNum != 47)
                 { CommandExportException(); return; }
 
-                BattleSystem.m_playerDistance.RecordValue = true;
+                battleSystem.m_playerDistance.RecordValue = true;
             }
 
             /// <summary>
@@ -408,7 +436,8 @@ namespace unlightvbe_kai_core
                     !(new int[] { 2, 3, 4, 70 }).Any(x => x == data.StageNum))
                 { CommandExportException(); return; }
 
-                var setPlayer = data.Message[0] == "1" ? data.Player : data.Player.GetOppenentPlayer();
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
 
                 playerDatas[(int)setPlayer].SC_PersonMoveControlRecord[setPlayer.ToRelative(data.Player)].Add(new()
                 {
@@ -429,10 +458,11 @@ namespace unlightvbe_kai_core
 
                 var selectType = (PersonMoveActionType)Convert.ToInt32(data.Message[1]);
 
-                if (selectType == PersonMoveActionType.BarMoveChange && BattleSystem.PlayerVersusMode != PlayerVersusModeType.ThreeOnThree)
+                if (selectType == PersonMoveActionType.BarMoveChange && battleSystem.PlayerVersusMode != PlayerVersusModeType.ThreeOnThree)
                 { CommandExportException(); return; }
 
-                var setPlayer = data.Message[0] == "1" ? data.Player : data.Player.GetOppenentPlayer();
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
 
                 playerDatas[(int)setPlayer].MoveBarSelect = selectType.ToMoveBarSelectType();
             }
@@ -448,10 +478,11 @@ namespace unlightvbe_kai_core
                 { CommandExportException(); return; }
 
 
-                var setPlayer = data.Message[0] == "1" ? data.Player : data.Player.GetOppenentPlayer();
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
 
-                BattleSystem.m_AttackPhaseFirst.MainProperty = setPlayer;
-                BattleSystem.m_AttackPhaseFirst.RecordValue = true;
+                battleSystem.m_AttackPhaseFirst.MainProperty = setPlayer;
+                battleSystem.m_AttackPhaseFirst.RecordValue = true;
             }
 
             /// <summary>
@@ -464,7 +495,8 @@ namespace unlightvbe_kai_core
                     (data.StageType != SkillStageType.Normal && data.StageType != SkillStageType.Event))
                 { CommandExportException(); return; }
 
-                var setPlayer = data.Message[0] == "1" ? data.Player : data.Player.GetOppenentPlayer();
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
                 var setType = (PersonBloodControlType)Convert.ToInt32(data.Message[2]);
 
                 int characterNum = Convert.ToInt32(data.Message[1]);
@@ -475,7 +507,7 @@ namespace unlightvbe_kai_core
                 {
                     case PersonBloodControlType.DirectDamage:
                     case PersonBloodControlType.Death:
-                        BattleSystem.CharacterHPDamage(new()
+                        battleSystem.CharacterHPDamage(new()
                         {
                             Player = setPlayer,
                             CharacterVBEID = playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].Character.VBEID,
@@ -487,7 +519,7 @@ namespace unlightvbe_kai_core
                         });
                         break;
                     case PersonBloodControlType.Heal:
-                        BattleSystem.CharacterHPHeal(new()
+                        battleSystem.CharacterHPHeal(new()
                         {
                             Player = setPlayer,
                             CharacterVBEID = playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].Character.VBEID,
@@ -498,6 +530,115 @@ namespace unlightvbe_kai_core
                         });
                         break;
                 }
+            }
+
+            /// <summary>
+            /// 原應執行之傷害無效化
+            /// </summary>
+            /// <param name="data"></param>
+            public void EventBloodActionOff(SkillCommandDataModel data)
+            {
+                if (data.StageNum != 46)
+                { CommandExportException(); return; }
+
+                this.EventBloodActionRecord[SkillStageCallCount].MainProperty = (true, this.EventBloodActionRecord[SkillStageCallCount].MainProperty.Item2);
+            }
+
+            /// <summary>
+            /// 原應執行之傷害效果變更
+            /// </summary>
+            /// <param name="data"></param>
+            public void EventBloodActionChange(SkillCommandDataModel data)
+            {
+                if (data.Message == null || data.Message.Length != 2 || data.StageNum != 46)
+                { CommandExportException(); return; }
+
+                var setType = (NumberChangeRecordThreeVersionType)Convert.ToInt32(data.Message[0]);
+                this.EventBloodActionRecord[SkillStageCallCount].MainProperty = (this.EventBloodActionRecord[SkillStageCallCount].MainProperty.Item1, true);
+                this.EventBloodActionRecord[SkillStageCallCount].RecordValue = (setType, Convert.ToInt32(data.Message[1]));
+            }
+
+            /// <summary>
+            /// 傷害反射效果執行
+            /// </summary>
+            /// <param name="data"></param>
+            public void EventBloodReflection(SkillCommandDataModel data)
+            {
+                if (data.Message == null || data.Message.Length != 3 ||
+                    (data.StageNum != 46 && data.StageNum != 48))
+                { CommandExportException(); return; }
+
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
+
+                int characterNum = Convert.ToInt32(data.Message[1]);
+                if (characterNum <= 0 || characterNum > playerDatas[(int)setPlayer].CharacterDatas.Count)
+                { CommandExportException(); return; }
+
+                battleSystem.CharacterHPDamage(new()
+                {
+                    Player = setPlayer,
+                    CharacterVBEID = playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].Character.VBEID,
+                    DamageNumber = Convert.ToInt32(data.Message[2]),
+                    DamageType = CharacterHPDamageType.Direct,
+                    IsCallEvent = false,
+                    TriggerPlayerType = data.Player.ToTriggerPlayerType(),
+                    TriggerSkillType = data.SkillType.ToTriggerSkillType()
+                });
+            }
+
+            /// <summary>
+            /// 原應執行之回復無效化
+            /// </summary>
+            /// <param name="data"></param>
+            public void EventHealActionOff(SkillCommandDataModel data)
+            {
+                if (data.StageNum != 48)
+                { CommandExportException(); return; }
+
+                this.EventHealActionRecord[SkillStageCallCount].MainProperty = (true, this.EventHealActionRecord[SkillStageCallCount].MainProperty.Item2);
+            }
+
+            /// <summary>
+            /// 原應執行之回復效果變更
+            /// </summary>
+            /// <param name="data"></param>
+            public void EventHealActionChange(SkillCommandDataModel data)
+            {
+                if (data.Message == null || data.Message.Length != 2 || data.StageNum != 48)
+                { CommandExportException(); return; }
+
+                var setType = (NumberChangeRecordThreeVersionType)Convert.ToInt32(data.Message[0]);
+                this.EventHealActionRecord[SkillStageCallCount].MainProperty = (this.EventHealActionRecord[SkillStageCallCount].MainProperty.Item1, true);
+                this.EventHealActionRecord[SkillStageCallCount].RecordValue = (setType, Convert.ToInt32(data.Message[1]));
+            }
+
+            /// <summary>
+            /// 回復反射效果執行
+            /// </summary>
+            /// <param name="data"></param>
+            public void EventHealReflection(SkillCommandDataModel data)
+            {
+                if (data.Message == null || data.Message.Length != 3 ||
+                    (data.StageNum != 46 && data.StageNum != 48))
+                { CommandExportException(); return; }
+
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
+
+                int characterNum = Convert.ToInt32(data.Message[1]);
+                if (characterNum <= 0 || characterNum > playerDatas[(int)setPlayer].CharacterDatas.Count)
+                { CommandExportException(); return; }
+
+                battleSystem.CharacterHPHeal(new()
+                {
+                    Player = setPlayer,
+                    CharacterVBEID = playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].Character.VBEID,
+                    HealNumber = Convert.ToInt32(data.Message[2]),
+                    IsCallEvent = false,
+                    TriggerPlayerType = data.Player.ToTriggerPlayerType(),
+                    TriggerSkillType = data.SkillType.ToTriggerSkillType()
+                });
             }
         }
     }
