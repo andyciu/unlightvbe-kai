@@ -33,5 +33,9 @@ namespace unlightvbe_kai_core.Interface
         public void EventHealActionOff();
         public void EventHealActionChange(NumberChangeRecordThreeVersionType recordType, int value);
         public void EventHealReflection(CommandPlayerRelativeTwoVersionType player, int characterNum, int value);
+        public void PersonAddBuff(CommandPlayerRelativeTwoVersionType player, int characterNum, string buffIdentifier, int buffValue, int buffTotal);
+        public void BuffTurnEnd();
+        public void BuffEnd();
+        public void EventRemoveBuffActionOff();
     }
 }

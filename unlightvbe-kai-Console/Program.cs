@@ -18,10 +18,42 @@ namespace unlightvbe_kai_console
             var player1 = data.GetPlayer(1);
             var player2 = data.GetPlayer(2);
 
-            BattleSystem battleSystem = new(player1, player2, new ConsoleInterface("1", player1, player2),
-                new AIWithConsoleInterface("2", player2, player1), SampleData.GetCardList_Deck());
+            var playerModel_p1 = GetPlayerModel(player1);
+            var playerModel_p2 = GetPlayerModel(player2);
+            var buffNameDict = SampleData.GetBuffNameDict();
 
-            Task.Run(() => { battleSystem.Start(); }).Wait();
+            BattleSystem battleSystem = new(new BattleSystemInitialDataModel
+            {
+                Player1 = player1,
+                Player2 = player2,
+                UserInterface_P1 = new ConsoleInterface("1", playerModel_p1, playerModel_p2, buffNameDict),
+                UserInterface_P2 = new AIWithConsoleInterface("2", playerModel_p2, playerModel_p1, buffNameDict),
+                InitialCardList = SampleData.GetCardList_Deck(),
+                BuffList = SampleData.GetBuffList()
+            });
+
+            Task.Run(battleSystem.Start).Wait();
+        }
+
+        private static ConsoleInterface.PlayerModel GetPlayerModel(Player player)
+        {
+            return new()
+            {
+                PlayerId = player.PlayerId,
+                Name = player.Name,
+                Characters = player.Deck.Deck_Subs.Select(x => new ConsoleInterface.CharacterModel
+                {
+                    Name = x.Character.Name,
+                    Title = x.Character.Title,
+                    HP = x.Character.HP,
+                    ATK = x.Character.ATK,
+                    DEF = x.Character.DEF,
+                    VBEID = x.Character.VBEID,
+                    EventColour = x.Character.EventColour,
+                    LevelMain = x.Character.LevelMain,
+                    LevelNum = x.Character.LevelNum,
+                }).ToList()
+            };
         }
         private static void test1()
         {
@@ -33,7 +65,7 @@ namespace unlightvbe_kai_console
                 },
                 new EventCard
                 {
-                    Number= 2,
+                    Number = 2,
                 }
             ];
 

@@ -1,17 +1,17 @@
 ﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
-using unlightvbe_kai_core.Models.IUserInterface;
+using unlightvbe_kai_core.Models.UserInterface;
 
 namespace unlightvbe_kai_core
 {
     public class MultiUserInterfaceAdapter
     {
-        protected IUserInterfaceAsync[] UserInterfaces { get; set; } = new IUserInterfaceAsync[2];
+        protected IUserInterface[] UserInterfaces { get; set; } = new IUserInterface[2];
         protected IUserAction UserActionProxy { get; set; }
         private readonly object dataLock = new();
 
-        public MultiUserInterfaceAdapter(IUserInterfaceAsync userInterface_P1, IUserInterfaceAsync userInterface_P2, IUserAction userActionProxy)
+        public MultiUserInterfaceAdapter(IUserInterface userInterface_P1, IUserInterface userInterface_P2, IUserAction userActionProxy)
         {
             UserInterfaces[(int)UserPlayerType.Player1] = userInterface_P1;
             UserInterfaces[(int)UserPlayerType.Player2] = userInterface_P2;
@@ -24,8 +24,8 @@ namespace unlightvbe_kai_core
             {
                 UserInterfaces[(int)UserPlayerType.Player1].ShowStartScreen(new()
                 {
-                    PlayerSelf_Id = data.PlayerSelf_Id,
-                    PlayerOpponent_Id = data.PlayerOpponent_Id,
+                    PlayerSelfId = data.PlayerSelfId,
+                    PlayerOpponentId = data.PlayerOpponentId,
                     PlayerSelf_CharacterVBEID = data.PlayerSelf_CharacterVBEID,
                     PlayerOpponent_CharacterVBEID = [data.PlayerOpponent_CharacterVBEID[0]]
                 });
@@ -34,8 +34,8 @@ namespace unlightvbe_kai_core
             {
                 UserInterfaces[(int)UserPlayerType.Player2].ShowStartScreen(new()
                 {
-                    PlayerSelf_Id = data.PlayerOpponent_Id,
-                    PlayerOpponent_Id = data.PlayerSelf_Id,
+                    PlayerSelfId = data.PlayerOpponentId,
+                    PlayerOpponentId = data.PlayerSelfId,
                     PlayerSelf_CharacterVBEID = data.PlayerOpponent_CharacterVBEID,
                     PlayerOpponent_CharacterVBEID = [data.PlayerSelf_CharacterVBEID[0]]
                 });
@@ -67,6 +67,8 @@ namespace unlightvbe_kai_core
                             Location = card.Location,
                             Owner = ActionCardRelativeOwner.Self,
                             Number = card.Number,
+                            Identifier = card.Identifier,
+                            IsReverse = card.IsReverse,
                         };
                     }).ToList(),
                     OpponentCardCount = cards_p2.Count,
@@ -87,6 +89,8 @@ namespace unlightvbe_kai_core
                             Location = card.Location,
                             Owner = ActionCardRelativeOwner.Self,
                             Number = card.Number,
+                            Identifier = card.Identifier,
+                            IsReverse = card.IsReverse,
                         };
                     }).ToList(),
                     OpponentCardCount = cards_p1.Count,
@@ -112,6 +116,8 @@ namespace unlightvbe_kai_core
                             Location = card_p1.Location,
                             Owner = ActionCardRelativeOwner.Self,
                             Number = card_p1.Number,
+                            Identifier = card_p1.Identifier,
+                            IsReverse = card_p1.IsReverse
                         }
                     ],
                     OpponentCardCount = 1,
@@ -132,6 +138,8 @@ namespace unlightvbe_kai_core
                             Location = card_p2.Location,
                             Owner = ActionCardRelativeOwner.Self,
                             Number = card_p2.Number,
+                            Identifier = card_p2.Identifier,
+                            IsReverse = card_p2.IsReverse
                         }
                     ],
                     OpponentCardCount = 1,
@@ -321,7 +329,6 @@ namespace unlightvbe_kai_core
             while (true)
             {
                 var tmpAction = UserInterfaces[(int)player].ReadAction();
-                //UserInterfaces[(int)player].ShowBattleMessage(tmpAction.Type.ToString() + " " + tmpAction.Message);
 
                 var method = UserActionProxy.GetType().GetMethod(tmpAction.Type.ToString());
                 object? result = null;
@@ -369,8 +376,12 @@ namespace unlightvbe_kai_core
 
                             if (phaseType == PhaseType.Attack || phaseType == PhaseType.Defense)
                             {
-                                UpdateDiceTotalNumberRelative(player, OpponentPlayer,
-                                    UserActionProxy.GetPlayerDiceTotalNumber(player), UserActionProxy.GetPlayerDiceTotalNumber(OpponentPlayer));
+                                UserInterfaces[(int)player].UpdateDataMulti(new()
+                                {
+                                    Type = UpdateDataMultiType.DiceTotal,
+                                    Self = UserActionProxy.GetPlayerDiceTotalNumber(player),
+                                    Opponent = UserActionProxy.GetPlayerDiceTotalNumber(OpponentPlayer)
+                                });
                             }
                         }
                         else
@@ -398,8 +409,12 @@ namespace unlightvbe_kai_core
                         {
                             if (phaseType == PhaseType.Attack || phaseType == PhaseType.Defense)
                             {
-                                UpdateDiceTotalNumberRelative(player, OpponentPlayer,
-                                    UserActionProxy.GetPlayerDiceTotalNumber(player), UserActionProxy.GetPlayerDiceTotalNumber(OpponentPlayer));
+                                UserInterfaces[(int)player].UpdateDataMulti(new()
+                                {
+                                    Type = UpdateDataMultiType.DiceTotal,
+                                    Self = UserActionProxy.GetPlayerDiceTotalNumber(player),
+                                    Opponent = UserActionProxy.GetPlayerDiceTotalNumber(OpponentPlayer)
+                                });
                             }
                         }
                     }
@@ -445,6 +460,8 @@ namespace unlightvbe_kai_core
                             Location = card.Location,
                             Owner = ActionCardRelativeOwner.Opponent,
                             Number = card.Number,
+                            Identifier = card.Identifier,
+                            IsReverse = card.IsReverse,
                         };
                     }).ToList(),
                 });
@@ -464,6 +481,8 @@ namespace unlightvbe_kai_core
                             Location = card.Location,
                             Owner = ActionCardRelativeOwner.Opponent,
                             Number = card.Number,
+                            Identifier = card.Identifier,
+                            IsReverse = card.IsReverse,
                         };
                     }).ToList(),
                 });
@@ -488,6 +507,8 @@ namespace unlightvbe_kai_core
                             Location = card.Location,
                             Owner = ActionCardRelativeOwner.Opponent,
                             Number = card.Number,
+                            Identifier = card.Identifier,
+                            IsReverse = card.IsReverse,
                         };
                     }).ToList(),
                 });
@@ -588,6 +609,87 @@ namespace unlightvbe_kai_core
                 {
                     Player = UserPlayerRelativeType.Opponent,
                     SkillID = skillVBEID
+                });
+            });
+            Task.WhenAll(task1, task2).Wait();
+        }
+
+        public void BuffDataSet(UserPlayerType selfPlayer, string characterVBEID, BuffDataBaseModel buffData)
+        {
+            UserPlayerType opponentPlayer = selfPlayer.GetOppenentPlayer();
+
+            Task task1 = Task.Run(() =>
+            {
+                UserInterfaces[(int)selfPlayer].BuffDataSet(new()
+                {
+                    Player = UserPlayerRelativeType.Self,
+                    CharacterVBEID = characterVBEID,
+                    BuffData = buffData
+                });
+            });
+
+            Task task2 = Task.Run(() =>
+            {
+                UserInterfaces[(int)opponentPlayer].BuffDataSet(new()
+                {
+                    Player = UserPlayerRelativeType.Opponent,
+                    CharacterVBEID = characterVBEID,
+                    BuffData = buffData
+                });
+            });
+            Task.WhenAll(task1, task2).Wait();
+        }
+
+        public void BuffDataUpdate(Dictionary<string, List<BuffDataBaseModel>> data_p1, Dictionary<string, List<BuffDataBaseModel>> data_p2)
+        {
+            Task task1 = Task.Run(() =>
+            {
+                UserInterfaces[(int)UserPlayerType.Player1].BuffDataUpdate(new()
+                {
+                    Datas = new()
+                    {
+                        { UserPlayerRelativeType.Self, data_p1 },
+                        { UserPlayerRelativeType.Opponent, data_p2 }
+                    }
+                });
+            });
+
+            Task task2 = Task.Run(() =>
+            {
+                UserInterfaces[(int)UserPlayerType.Player2].BuffDataUpdate(new()
+                {
+                    Datas = new()
+                    {
+                        { UserPlayerRelativeType.Self, data_p2 },
+                        { UserPlayerRelativeType.Opponent, data_p1 }
+                    }
+                });
+            });
+
+            Task.WhenAll(task1, task2).Wait();
+        }
+
+        public void BuffDataRemove(UserPlayerType selfPlayer, string characterVBEID, string buffIdentifier)
+        {
+            UserPlayerType opponentPlayer = selfPlayer.GetOppenentPlayer();
+
+            Task task1 = Task.Run(() =>
+            {
+                UserInterfaces[(int)selfPlayer].BuffDataRemove(new()
+                {
+                    Player = UserPlayerRelativeType.Self,
+                    CharacterVBEID = characterVBEID,
+                    BuffIdentifier = buffIdentifier
+                });
+            });
+
+            Task task2 = Task.Run(() =>
+            {
+                UserInterfaces[(int)opponentPlayer].BuffDataRemove(new()
+                {
+                    Player = UserPlayerRelativeType.Opponent,
+                    CharacterVBEID = characterVBEID,
+                    BuffIdentifier = buffIdentifier
                 });
             });
             Task.WhenAll(task1, task2).Wait();

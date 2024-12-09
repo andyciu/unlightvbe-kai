@@ -5,12 +5,12 @@ namespace unlightvbe_kai_core.Models
 {
     public class CharacterHPDamageDataModel
     {
-        public UserPlayerType Player { get; set; }
-        public string CharacterVBEID { get; set; }
-        public int DamageNumber { get; set; }
-        public CharacterHPDamageType DamageType { get; set; }
-        public bool IsCallEvent { get; set; }
-        public CommandPlayerType TriggerPlayerType { get; set; }
-        public TriggerSkillType TriggerSkillType { get; set; }
+        public required UserPlayerType Player { get; set; }
+        public required string CharacterVBEID { get; set; }
+        public required int DamageNumber { get; set; }
+        public required CharacterHPDamageType DamageType { get; set; }
+        public required bool IsCallEvent { get; set; }
+        public required CommandPlayerType TriggerPlayerType { get; set; }
+        public required TriggerSkillType TriggerSkillType { get; set; }
     }
 }

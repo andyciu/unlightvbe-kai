@@ -4,10 +4,10 @@ namespace unlightvbe_kai_core.Models.StageMessage
 {
     public record StageMessageModel_48 : IStageMessageModel<StageMessageModel_48>
     {
-        public CommandPlayerRelativeTwoVersionType TargetPlayer { get; init; }
-        public int TargetCharacterIndex { get; init; }
-        public int HealValue { get; init; }
-        public CommandPlayerRelativeThreeVersionType TriggerPlayer { get; init; }
-        public TriggerSkillType TriggerSkill { get; init; }
+        public required CommandPlayerRelativeTwoVersionType TargetPlayer { get; init; }
+        public required int TargetCharacterIndex { get; init; }
+        public required int HealValue { get; init; }
+        public required CommandPlayerRelativeThreeVersionType TriggerPlayer { get; init; }
+        public required TriggerSkillType TriggerSkill { get; init; }
     }
 }

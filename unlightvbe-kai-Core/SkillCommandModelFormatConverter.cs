@@ -102,7 +102,7 @@ namespace unlightvbe_kai_core
         /// </summary>
         /// <remarks>
         /// [Normal]{!=Buff}(!=13/!=33)<br/>
-        /// ※觸發執行階段(61)事件
+        /// ※(61)
         /// </remarks>
         public void SkillAnimateStartPlay()
         {
@@ -352,6 +352,58 @@ namespace unlightvbe_kai_core
         public void EventHealReflection(CommandPlayerRelativeTwoVersionType player, int characterNum, int value)
         {
             skillCommandModels.Add(new(SkillCommandType.EventHealReflection, ((int)player).ToString(), characterNum.ToString(), value.ToString()));
+        }
+
+        /// <summary>
+        /// 人物角色新增異常狀態
+        /// </summary>
+        /// <param name="player">目標玩家方</param>
+        /// <param name="characterNum">目標方角色順序(台上1>台下2/3)</param>
+        /// <param name="buffIdentifier">異常狀態之技能唯一識別碼</param>
+        /// <param name="buffValue">效果變化量</param>
+        /// <param name="buffTotal">效果回合數</param>
+        /// <remarks>
+        /// [Normal/Event]{!Buff}<br/>
+        /// ※(72[異常狀態新增時]/76[人物角色附加狀態增加時])
+        /// </remarks>
+        public void PersonAddBuff(CommandPlayerRelativeTwoVersionType player, int characterNum, string buffIdentifier, int buffValue, int buffTotal)
+        {
+            skillCommandModels.Add(new(SkillCommandType.PersonAddBuff, ((int)player).ToString(), characterNum.ToString(), buffIdentifier, buffValue.ToString(), buffTotal.ToString()));
+        }
+
+        /// <summary>
+        /// 異常狀態宣告當回合結束
+        /// </summary>
+        /// <remarks>
+        /// {Buff}[Normal/Event](!=72/!=73)<br/>
+        /// ※(73[異常狀態消滅時]/77*[人物角色附加狀態解除時])
+        /// </remarks>
+        public void BuffTurnEnd()
+        {
+            skillCommandModels.Add(new(SkillCommandType.BuffTurnEnd));
+        }
+
+        /// <summary>
+        /// 異常狀態宣告結束
+        /// </summary>
+        /// <remarks>
+        /// {Buff}[Normal/Event](!=72/!=73)<br/>
+        /// ※(73[異常狀態消滅時]/77*[人物角色附加狀態解除時])
+        /// </remarks>
+        public void BuffEnd()
+        {
+            skillCommandModels.Add(new(SkillCommandType.BuffEnd));
+        }
+
+        /// <summary>
+        /// 原應執行之異常狀態消除無效化
+        /// </summary>
+        /// <remarks>
+        /// {Buff}(73)
+        /// </remarks>
+        public void EventRemoveBuffActionOff()
+        {
+            skillCommandModels.Add(new(SkillCommandType.EventRemoveBuffActionOff));
         }
     }
 }

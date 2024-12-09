@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Enum.SkillCommand;
+using unlightvbe_kai_core.Enum.StageMessage;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
 
@@ -53,6 +54,13 @@ namespace unlightvbe_kai_core
             /// </remarks>
             public Dictionary<int, PropertyWithRecord<(bool, bool), (NumberChangeRecordThreeVersionType, int)>> EventHealActionRecord { get; set; } = [];
             /// <summary>
+            /// 異常狀態消滅時觸發事件(73)反映紀錄
+            /// </summary>
+            /// <remarks>
+            /// EventRemoveBuffActionOff - bool
+            /// </remarks>
+            public Dictionary<int, bool> EventRemoveBuffActionRecord { get; set; } = [];
+            /// <summary>
             /// 執行指令呼叫執行
             /// </summary>
             /// <param name="commandList">指令集合</param>
@@ -60,7 +68,7 @@ namespace unlightvbe_kai_core
             {
                 foreach (SkillCommandModel command in commandList)
                 {
-                    if (!data.IsAuthMode && !CheckCommandIsAllowOnUnAuthMode(command.Type)) continue;
+                    if (!CheckIsAuthorize(data, command.Type)) continue;
 
                     var method = this.GetType().GetMethod(command.Type.ToString());
                     if (method != null)
@@ -79,6 +87,37 @@ namespace unlightvbe_kai_core
                         method.Invoke(this, [methodData]);
                     }
                 }
+            }
+
+            /// <summary>
+            /// 檢查是否符合技能發動驗證
+            /// </summary>
+            /// <param name="data"></param>
+            /// <param name="commandType"></param>
+            /// <returns></returns>
+            private bool CheckIsAuthorize(SkillCommandProxyExecueCommandDataModel data, SkillCommandType commandType)
+            {
+                switch (data.SkillType)
+                {
+                    case SkillType.ActiveSkill:
+                        if (playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex].ActiveSkillIsActivate[data.SkillIndex] ||
+                            CheckCommandIsAllowOnUnAuthMode(commandType))
+                        {
+                            return true;
+                        }
+                        break;
+                    case SkillType.PassiveSkill:
+                        if (playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex].PassiveSkillIsActivate[data.SkillIndex] ||
+                            CheckCommandIsAllowOnUnAuthMode(commandType))
+                        {
+                            return true;
+                        }
+                        break;
+                    case SkillType.Buff:
+                    case SkillType.CharacterActualStatus:
+                        return true;
+                }
+                return false;
             }
 
             /// <summary>
@@ -221,7 +260,7 @@ namespace unlightvbe_kai_core
 
                 battleSystem.MultiUIAdapter.ShowSkillAnimate(data.Player, data.SkillID);
 
-                battleSystem.SkillAdapter.StageStartSkillOnly(61, data.Player, data.CharacterBattleIndex, data.SkillType, data.SkillIndex);
+                battleSystem.SkillAdapter.StageStartSkillOnly_Active_Passive(61, data.Player, data.CharacterBattleIndex, data.SkillType, data.SkillIndex, null);
             }
 
             /// <summary>
@@ -269,7 +308,7 @@ namespace unlightvbe_kai_core
             public void PersonTotalDiceControl(SkillCommandDataModel data)
             {
                 if (data.Message == null || data.Message.Length != 3 ||
-                    !(new int[] { 10, 11, 30, 31 }).Any(x => x == data.StageNum))
+                    !(new int[] { 10, 11, 12, 30, 31, 32 }).Any(x => x == data.StageNum))
                 { CommandExportException(); return; }
 
                 var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
@@ -386,7 +425,7 @@ namespace unlightvbe_kai_core
 
                 var tmpDiceTrueTotal = tmpDiceTrue[(int)attackPlyaer] - tmpDiceTrue[(int)defensePlayer];
 
-                battleSystem.SkillAdapter.StageStartSkillOnly(62, data.Player, data.CharacterBattleIndex, data.SkillType, data.SkillIndex,
+                battleSystem.SkillAdapter.StageStartSkillOnly_Active_Passive(62, data.Player, data.CharacterBattleIndex, data.SkillType, data.SkillIndex,
                     [
                         playerDatas[(int)UserPlayerType.Player1].DiceTotal.ToString(),
                         playerDatas[(int)UserPlayerType.Player2].DiceTotal.ToString(),
@@ -639,6 +678,152 @@ namespace unlightvbe_kai_core
                     TriggerPlayerType = data.Player.ToTriggerPlayerType(),
                     TriggerSkillType = data.SkillType.ToTriggerSkillType()
                 });
+            }
+
+            /// <summary>
+            /// 人物角色新增異常狀態
+            /// </summary>
+            /// <param name="data"></param>
+            public void PersonAddBuff(SkillCommandDataModel data)
+            {
+                if (data.Message == null || data.Message.Length != 5 || data.SkillType == SkillType.Buff ||
+                    (data.StageType != SkillStageType.Normal && data.StageType != SkillStageType.Event))
+                { CommandExportException(); return; }
+
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
+
+                int characterNum = Convert.ToInt32(data.Message[1]);
+                if (characterNum <= 0 || characterNum > playerDatas[(int)setPlayer].CharacterDatas.Count)
+                { CommandExportException(); return; }
+
+                if (battleSystem.BuffList.Any(x => x.Identifier == data.Message[2]))
+                {
+                    var tmpBuffData = playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].BuffDatas.Find(x => x.Buff.Identifier == data.Message[2]);
+                    if (tmpBuffData != null)
+                    {
+                        tmpBuffData.Value = Convert.ToInt32(data.Message[3]);
+                        tmpBuffData.Total = Convert.ToInt32(data.Message[4]);
+                    }
+                    else
+                    {
+                        tmpBuffData = new BuffData
+                        {
+                            Buff = battleSystem.BuffList.First(x => x.Identifier == data.Message[2]),
+                            Value = Convert.ToInt32(data.Message[3]),
+                            Total = Convert.ToInt32(data.Message[4])
+                        };
+                        playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].BuffDatas.Add(tmpBuffData);
+                    }
+
+
+                    battleSystem.MultiUIAdapter.BuffDataSet(setPlayer, playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].Character.VBEID,
+                        new()
+                        {
+                            Identifier = tmpBuffData.Buff.Identifier,
+                            Value = tmpBuffData.Value,
+                            Total = tmpBuffData.Total,
+                        });
+
+                    //執行階段(72)-異常狀態新增時
+                    battleSystem.SkillAdapter.StageStartSkillOnly_Buff(72, setPlayer, characterNum - 1, tmpBuffData.Buff.Identifier, null);
+
+                    //執行階段(76)-人物角色附加狀態增加時
+                    battleSystem.SkillAdapter.StageStart(76, setPlayer, true, true,
+                        [
+                            ((int)setPlayer).ToString(),
+                            ((int)SkillType.Buff).ToString(),
+                            tmpBuffData.Buff.Identifier
+                        ]);
+                }
+            }
+
+            /// <summary>
+            /// 異常狀態宣告當回合結束
+            /// </summary>
+            /// <param name="data"></param>
+            public void BuffTurnEnd(SkillCommandDataModel data)
+            {
+                if (data.SkillType != SkillType.Buff || (data.StageType != SkillStageType.Normal && data.StageType != SkillStageType.Event) ||
+                    (data.StageNum == 72 || data.StageNum == 73))
+                { CommandExportException(); return; }
+
+                var buffData = playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex]
+                    .BuffDatas.Where(x => x.Buff.Identifier == data.SkillID).First();
+
+                buffData.Total -= 1;
+
+                if (buffData.Total <= 0)
+                {
+                    //執行階段(73)-異常狀態消滅時
+                    battleSystem.SkillAdapter.StageStartSkillOnly_Buff(73, data.Player, data.CharacterBattleIndex, buffData.Buff.Identifier,
+                        [
+                            ((int)StageMessage73_RemoveType.Active).ToString()
+                        ]);
+
+                    playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex].BuffDatas.Remove(buffData);
+
+                    battleSystem.MultiUIAdapter.BuffDataRemove(data.Player, playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex].Character.VBEID, buffData.Buff.Identifier);
+
+                    //執行階段(77)-人物角色附加狀態解除時
+                    battleSystem.SkillAdapter.StageStart(77, data.Player, true, true,
+                        [
+                            ((int)data.Player).ToString(),
+                            ((int)SkillType.Buff).ToString(),
+                            buffData.Buff.Identifier
+                        ]);
+                }
+            }
+
+            /// <summary>
+            /// 異常狀態宣告結束
+            /// </summary>
+            /// <param name="data"></param>
+            public void BuffEnd(SkillCommandDataModel data)
+            {
+                if (data.SkillType != SkillType.Buff || (data.StageType != SkillStageType.Normal && data.StageType != SkillStageType.Event) ||
+                    (data.StageNum == 72 || data.StageNum == 73))
+                { CommandExportException(); return; }
+
+                var buffData = playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex]
+                    .BuffDatas.Where(x => x.Buff.Identifier == data.SkillID).First();
+
+                //執行階段(73)-異常狀態消滅時
+                battleSystem.SkillAdapter.StageStartSkillOnly_Buff(73, data.Player, data.CharacterBattleIndex, buffData.Buff.Identifier,
+                    [
+                        ((int)StageMessage73_RemoveType.Active).ToString()
+                    ]);
+
+                playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex].BuffDatas.Remove(buffData);
+
+                battleSystem.MultiUIAdapter.BuffDataRemove(data.Player, playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex].Character.VBEID, buffData.Buff.Identifier);
+
+                //執行階段(77)-人物角色附加狀態解除時
+                battleSystem.SkillAdapter.StageStart(77, data.Player, true, true,
+                    [
+                        ((int)data.Player).ToString(),
+                        ((int)SkillType.Buff).ToString(),
+                        buffData.Buff.Identifier
+                    ]);
+            }
+
+            /// <summary>
+            /// 原應執行之異常狀態消除無效化
+            /// </summary>
+            /// <param name="data"></param>
+            public void EventRemoveBuffActionOff(SkillCommandDataModel data)
+            {
+                if (data.StageNum != 73 || data.SkillType != SkillType.Buff)
+                { CommandExportException(); return; }
+
+                if (EventRemoveBuffActionRecord.ContainsKey(SkillStageCallCount))
+                {
+                    this.EventRemoveBuffActionRecord[SkillStageCallCount] = true;
+                }
+                else
+                {
+                    CommandExportException(); //是否為主動觸發應於各狀態內判斷
+                }
             }
         }
     }

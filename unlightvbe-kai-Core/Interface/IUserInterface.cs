@@ -1,4 +1,4 @@
-﻿using unlightvbe_kai_core.Models.IUserInterface;
+﻿using unlightvbe_kai_core.Models.UserInterface;
 
 namespace unlightvbe_kai_core.Interface
 {
@@ -18,5 +18,8 @@ namespace unlightvbe_kai_core.Interface
         public ChangeCharacterActionModel ChangeCharacterAction();
         public void ShowJudgment(ShowJudgmentModel data);
         public void ShowSkillAnimate(ShowSkillAnimateModel data);
+        public void BuffDataSet(BuffDataSetModel data);
+        public void BuffDataUpdate(BuffDataUpdateModel data);
+        public void BuffDataRemove(BuffDataRemoveModel data);
     }
 }

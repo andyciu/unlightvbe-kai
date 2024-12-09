@@ -1,7 +1,7 @@
 ﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Enum.SkillCommand;
-using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
+using unlightvbe_kai_core.Models.Skill;
 
 namespace unlightvbe_kai_core
 {
@@ -19,6 +19,10 @@ namespace unlightvbe_kai_core
         /// 是否進入勝負判斷模式
         /// </summary>
         private bool IsJudgmentMode { get; set; } = false;
+        /// <summary>
+        /// 是否跳至新回合開始
+        /// </summary>
+        private bool IsTurnContinue { get; set; } = false;
         /// <summary>
         /// 對雙方玩家使用者介面資訊配置器
         /// </summary>
@@ -105,20 +109,24 @@ namespace unlightvbe_kai_core
         /// 初始戰鬥公牌排組
         /// </summary>
         protected List<ActionCard> InitialCardDeck { get; set; }
+        /// <summary>
+        /// 技能體系集合(異常狀態)
+        /// </summary>
+        protected List<BuffSkillModel> BuffList { get; set; }
         private static readonly Random Rnd = new(DateTime.Now.Millisecond);
 
 
-        public BattleSystem(Player player1, Player player2, IUserInterfaceAsync userInterface_P1, IUserInterfaceAsync userInterface_P2, List<ActionCard> initialCardList)
+        public BattleSystem(BattleSystemInitialDataModel data)
         {
             try
             {
-                PlayerDatas[(int)UserPlayerType.Player1] = new(player1, UserPlayerType.Player1);
-                PlayerDatas[(int)UserPlayerType.Player2] = new(player2, UserPlayerType.Player2);
-                if (player1.Deck.Deck_Subs.Count == 1 && player2.Deck.Deck_Subs.Count == 1)
+                PlayerDatas[(int)UserPlayerType.Player1] = new(data.Player1, UserPlayerType.Player1);
+                PlayerDatas[(int)UserPlayerType.Player2] = new(data.Player2, UserPlayerType.Player2);
+                if (data.Player1.Deck.Deck_Subs.Count == 1 && data.Player2.Deck.Deck_Subs.Count == 1)
                 {
                     PlayerVersusMode = PlayerVersusModeType.OneOnOne;
                 }
-                else if (player1.Deck.Deck_Subs.Count == 3 && player2.Deck.Deck_Subs.Count == 3)
+                else if (data.Player1.Deck.Deck_Subs.Count == 3 && data.Player2.Deck.Deck_Subs.Count == 3)
                 {
                     PlayerVersusMode = PlayerVersusModeType.ThreeOnThree;
                 }
@@ -131,9 +139,10 @@ namespace unlightvbe_kai_core
                 SkillAdapter = new SkillAdapterClass(this);
                 SkillCommandProxy = new SkillCommandProxyClass(this);
 
-                MultiUIAdapter = new(userInterface_P1, userInterface_P2, new UserActionProxy(this));
+                MultiUIAdapter = new(data.UserInterface_P1, data.UserInterface_P2, new UserActionProxy(this));
 
-                InitialCardDeck = initialCardList;
+                InitialCardDeck = data.InitialCardList;
+                BuffList = data.BuffList;
             }
             catch (Exception)
             {
@@ -149,9 +158,10 @@ namespace unlightvbe_kai_core
             StartScreenPhase();
             while (TurnNum <= TurnMaxNum && !IsJudgmentMode)
             {
-                if (!IsJudgmentMode) DrawPhase(); else break;
-                if (!IsJudgmentMode) MovePhase(); else break;
-                if (!IsJudgmentMode) AttackWithDefensePhase(); else break;
+                IsTurnContinue = false;
+                if (!IsJudgmentMode && !IsTurnContinue) DrawPhase(); else if (IsJudgmentMode) break;
+                if (!IsJudgmentMode && !IsTurnContinue) MovePhase(); else if (IsJudgmentMode) break;
+                if (!IsJudgmentMode && !IsTurnContinue) AttackWithDefensePhase(); else if (IsJudgmentMode) break;
                 if (!IsJudgmentMode) TurnEndPhase(); else break;
             }
             JudgmentPhase();
@@ -194,8 +204,8 @@ namespace unlightvbe_kai_core
         {
             MultiUIAdapter.ShowStartScreen(new()
             {
-                PlayerSelf_Id = PlayerDatas[(int)UserPlayerType.Player1].Player.PlayerId,
-                PlayerOpponent_Id = PlayerDatas[(int)UserPlayerType.Player2].Player.PlayerId,
+                PlayerSelfId = PlayerDatas[(int)UserPlayerType.Player1].Player.PlayerId,
+                PlayerOpponentId = PlayerDatas[(int)UserPlayerType.Player2].Player.PlayerId,
                 PlayerSelf_CharacterVBEID = PlayerDatas[(int)UserPlayerType.Player1].CharacterDatas.Select(x => x.Character.VBEID).ToList(),
                 PlayerOpponent_CharacterVBEID = PlayerDatas[(int)UserPlayerType.Player2].CharacterDatas.Select(x => x.Character.VBEID).ToList()
             });
@@ -233,7 +243,7 @@ namespace unlightvbe_kai_core
             MultiUIAdapter.UpdateData_All(new()
             {
                 Type = UpdateDataType.DeckCount,
-                Value = CardDecks[(int)CardDeckType.Deck].Count
+                Value = CardDecks[CardDeckType.Deck].Count
             });
 
             //執行階段(0)
@@ -242,7 +252,7 @@ namespace unlightvbe_kai_core
             //發牌(行動卡)
             while (waitToDeal_P1 > 0 || waitToDeal_P2 > 0)
             {
-                var tmpcard = CardDecks[(int)CardDeckType.Deck].ElementAt(0).Value;
+                var tmpcard = CardDecks[CardDeckType.Deck].First().Value;
                 if (dealside == ActionCardOwner.Player1)
                 {
                     dealside = ActionCardOwner.Player2;
@@ -281,7 +291,7 @@ namespace unlightvbe_kai_core
                 if (n == 0) dealside = ActionCardOwner.Player1;
                 else dealside = ActionCardOwner.Player2;
 
-                var tmpcard = CardDecks[GetCardDeckType(dealside, ActionCardLocation.Deck)].ElementAt(0).Value;
+                var tmpcard = CardDecks[GetCardDeckType(dealside, ActionCardLocation.Deck)].First().Value;
                 tmpcard.Location = ActionCardLocation.Hold;
                 tmpcard.Owner = dealside;
 
@@ -295,7 +305,7 @@ namespace unlightvbe_kai_core
             MultiUIAdapter.UpdateData_All(new()
             {
                 Type = UpdateDataType.DeckCount,
-                Value = CardDecks[(int)CardDeckType.Deck].Count
+                Value = CardDecks[CardDeckType.Deck].Count
             });
 
             //執行階段(1)
@@ -480,9 +490,14 @@ namespace unlightvbe_kai_core
             }
 
             //角色存活檢查
-            if (!PlayerCharacterHPCheck())
+            var tmpHPCheck = PlayerCharacterHPCheck();
+            if (!tmpHPCheck.Item1)
             {
                 IsJudgmentMode = true;
+            }
+            else if (tmpHPCheck.Item1 && tmpHPCheck.Item2)
+            {
+                IsTurnContinue = true;
             }
             else
             {
@@ -497,6 +512,7 @@ namespace unlightvbe_kai_core
         private void AttackWithDefensePhase()
         {
             UserPlayerType attackPlyaer, defensePlayer;
+            var tmpHPCheck = (false, false);
 
             for (int i = 0; i < 2; i++)
             {
@@ -540,13 +556,20 @@ namespace unlightvbe_kai_core
                 MultiUIAdapter.OpenOppenentPlayingCard(defensePlayer,
                     CardDecks[GetCardDeckType(attackPlyaer, ActionCardLocation.Play)].Select(x => x.Value).ToList());
 
+                //骰數計算
+                UpdatePlayerDiceTotalNumber(attackPlyaer, PhaseType.Attack);
+                MultiUIAdapter.UpdateDiceTotalNumberRelative(attackPlyaer, defensePlayer,
+                    PlayerDatas[(int)attackPlyaer].DiceTotal, PlayerDatas[(int)defensePlayer].DiceTotal);
+
                 //Defense Action
                 MultiUIAdapter.AttackWithDefensePhaseReadAction(defensePlayer, PhaseType.Defense);
                 MultiUIAdapter.OpenOppenentPlayingCard(attackPlyaer,
                     CardDecks[GetCardDeckType(defensePlayer, ActionCardLocation.Play)].Select(x => x.Value).ToList());
 
-                //骰數再計算
+                //骰數計算
                 UpdatePlayerDiceTotalNumber(attackPlyaer, PhaseType.Attack);
+                MultiUIAdapter.UpdateDiceTotalNumberRelative(attackPlyaer, defensePlayer,
+                    PlayerDatas[(int)attackPlyaer].DiceTotal, PlayerDatas[(int)defensePlayer].DiceTotal);
 
                 //執行階段(10/30)
                 SkillAdapter.StageStart(10, attackPlyaer, true, false);
@@ -555,6 +578,10 @@ namespace unlightvbe_kai_core
                 //執行階段(11/31)
                 SkillAdapter.StageStart(11, attackPlyaer, true, false);
                 SkillAdapter.StageStart(31, defensePlayer, true, false);
+
+                //執行階段(12/32)
+                SkillAdapter.StageStart(12, attackPlyaer, true, false);
+                SkillAdapter.StageStart(32, defensePlayer, true, false);
 
                 MultiUIAdapter.UpdateDiceTotalNumberRelative(attackPlyaer, defensePlayer,
                     PlayerDatas[(int)attackPlyaer].DiceTotal, PlayerDatas[(int)defensePlayer].DiceTotal);
@@ -569,17 +596,27 @@ namespace unlightvbe_kai_core
                     MultiUIAdapter.ShowBattleMessage("Cancel attack.");
                 }
 
-                //執行階段(12/32)
-                SkillAdapter.StageStart(12, attackPlyaer, true, false);
-                SkillAdapter.StageStart(32, defensePlayer, true, false);
+                //執行階段(18/38)
+                SkillAdapter.StageStart(18, attackPlyaer, true, false);
+                SkillAdapter.StageStart(38, defensePlayer, true, false);
+
+                //執行階段(19/39)
+                SkillAdapter.StageStart(19, attackPlyaer, true, false);
+                SkillAdapter.StageStart(39, defensePlayer, true, false);
 
                 //收牌
                 CollectPlayingCardToGraveyard();
 
                 //角色存活檢查
-                if (!PlayerCharacterHPCheck())
+                tmpHPCheck = PlayerCharacterHPCheck();
+                if (!tmpHPCheck.Item1)
                 {
                     IsJudgmentMode = true;
+                    return;
+                }
+                else if (tmpHPCheck.Item1 && tmpHPCheck.Item2)
+                {
+                    IsTurnContinue = true;
                     return;
                 }
 
@@ -632,9 +669,15 @@ namespace unlightvbe_kai_core
                 SkillAdapter.StageStart(36, defensePlayer, true, false);
 
                 //角色存活檢查
-                if (!PlayerCharacterHPCheck())
+                tmpHPCheck = PlayerCharacterHPCheck();
+                if (!tmpHPCheck.Item1)
                 {
                     IsJudgmentMode = true;
+                    return;
+                }
+                else if (tmpHPCheck.Item1 && tmpHPCheck.Item2)
+                {
+                    IsTurnContinue = true;
                     return;
                 }
             }
@@ -686,13 +729,6 @@ namespace unlightvbe_kai_core
                 SkillAdapter.StageStart(tmpNum, AttackPhaseFirst.GetOppenentPlayer(), true, true);
             }
 
-            //角色存活檢查
-            if (!PlayerCharacterHPCheck())
-            {
-                IsJudgmentMode = true;
-                return;
-            }
-
             int waitToDeal_P1 = PlayerDatas[(int)UserPlayerType.Player1].HoldMaxCount - CardDecks[CardDeckType.Hold_P1].Count;
             int waitToDeal_P2 = PlayerDatas[(int)UserPlayerType.Player2].HoldMaxCount - CardDecks[CardDeckType.Hold_P2].Count;
 
@@ -710,6 +746,21 @@ namespace unlightvbe_kai_core
             }
 
             MultiUIAdapter.ShowBattleMessage(string.Format("Turn {0} end.", TurnNum));
+
+            //角色存活檢查
+            var tmpHPCheck = PlayerCharacterHPCheck();
+            if (!tmpHPCheck.Item1)
+            {
+                IsJudgmentMode = true;
+                return;
+            }
+            else if (tmpHPCheck.Item1 && tmpHPCheck.Item2)
+            {
+                IsTurnContinue = true;
+                return;
+            }
+
+            UIUpdateBuffData();
         }
     }
 }

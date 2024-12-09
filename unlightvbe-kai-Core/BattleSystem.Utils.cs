@@ -1,6 +1,7 @@
 ﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Enum.SkillCommand;
 using unlightvbe_kai_core.Models;
+using unlightvbe_kai_core.Models.UserInterface;
 
 namespace unlightvbe_kai_core
 {
@@ -11,7 +12,7 @@ namespace unlightvbe_kai_core
         /// </summary>
         /// <param name="origdeck">原始集合</param>
         /// <returns></returns>
-        private Dictionary<int, Card> ShuffleDeck(Dictionary<int, Card> origdeck)
+        private static Dictionary<int, Card> ShuffleDeck(Dictionary<int, Card> origdeck)
         {
             var tmpdeck = new Dictionary<int, Card>(origdeck);
             var newdeck = new Dictionary<int, Card>();
@@ -31,12 +32,13 @@ namespace unlightvbe_kai_core
         /// </summary>
         private void GraveyardDeckReUse()
         {
-            foreach (var card in CardDecks[CardDeckType.Graveyard])
+            while (CardDecks[CardDeckType.Graveyard].Count > 0)
             {
-                card.Value.Location = ActionCardLocation.Deck;
-                card.Value.Owner = ActionCardOwner.System;
+                var tmpCard = CardDecks[CardDeckType.Graveyard].First();
+                tmpCard.Value.Location = ActionCardLocation.Deck;
+                tmpCard.Value.Owner = ActionCardOwner.System;
 
-                DeckCardMove(card.Value, CardDeckType.Graveyard, CardDeckType.Deck);
+                DeckCardMove(tmpCard.Value, CardDeckType.Graveyard, CardDeckType.Deck);
             }
         }
 
@@ -72,14 +74,15 @@ namespace unlightvbe_kai_core
         /// </summary>
         private void ImportActionCardToDeck()
         {
-            foreach (var card in InitialCardDeck)
+            for (int i = 0; i < InitialCardDeck.Count; i++)
             {
+                var tmpCard = new ActionCard(InitialCardDeck[i]);
                 int tmpnum = GetCardIndex(CardDeckType.Deck);
-                card.Number = tmpnum;
-                card.Owner = ActionCardOwner.System;
-                card.Location = ActionCardLocation.Deck;
+                tmpCard.Number = tmpnum;
+                tmpCard.Owner = ActionCardOwner.System;
+                tmpCard.Location = ActionCardLocation.Deck;
 
-                CardDecks[CardDeckType.Deck].Add(tmpnum, card);
+                CardDecks[CardDeckType.Deck].Add(tmpnum, tmpCard);
             }
         }
 
@@ -93,16 +96,18 @@ namespace unlightvbe_kai_core
                 var player = PlayerDatas[i];
                 foreach (var sub in player.Player.Deck.Deck_Subs)
                 {
-                    foreach (var card in sub.EventCards)
+                    if (sub.EventCards == null) continue;
+                    for (int j = 0; j < sub.EventCards.Count; j++)
                     {
+                        var tmpCard = new EventCard(sub.EventCards[j]);
                         CardDeckType cardDeckType = GetCardDeckType((UserPlayerType)i, ActionCardLocation.Deck);
 
                         int tmpnum = GetCardIndex(cardDeckType);
-                        card.Number = tmpnum;
-                        card.Owner = ActionCardOwner.System;
-                        card.Location = ActionCardLocation.Deck;
+                        tmpCard.Number = tmpnum;
+                        tmpCard.Owner = ActionCardOwner.System;
+                        tmpCard.Location = ActionCardLocation.Deck;
 
-                        CardDecks[cardDeckType].Add(tmpnum, card);
+                        CardDecks[cardDeckType].Add(tmpnum, tmpCard);
                     }
                 }
             }
@@ -243,6 +248,11 @@ namespace unlightvbe_kai_core
                 }
             }
 
+            foreach (var type in System.Enum.GetValues<ActionCardType>())
+            {
+                result.TryAdd(type, 0);
+            }
+
             return result;
         }
 
@@ -264,7 +274,7 @@ namespace unlightvbe_kai_core
                 case PhaseType.Attack:
                     ActionCardType ATKcardType = distance == PlayerDistanceType.Close ? ActionCardType.ATK_Sword : ActionCardType.ATK_Gun;
 
-                    if (cardtotal.TryGetValue(ATKcardType, out tmptotalnum))
+                    if (cardtotal.TryGetValue(ATKcardType, out tmptotalnum) && tmptotalnum > 0)
                     {
                         result += tmptotalnum;
                         result += PlayerDatas[(int)player].CurrentCharacter.Character.ATK;
@@ -395,21 +405,24 @@ namespace unlightvbe_kai_core
             foreach (var player in System.Enum.GetValues<UserPlayerType>())
             {
                 var cardtype = GetCardDeckType(player, ActionCardLocation.Play);
-                foreach (var card in CardDecks[cardtype])
-                {
-                    if (card.Value.GetType().Equals(typeof(EventCard)))
-                    {
-                        card.Value.Location = ActionCardLocation.Fold;
-                        card.Value.Owner = ActionCardOwner.System;
 
-                        DeckCardMove(card.Value, cardtype, CardDeckType.Fold);
+                while (CardDecks[cardtype].Count > 0)
+                {
+                    var tmpCard = CardDecks[cardtype].First();
+
+                    if (tmpCard.Value.GetType().Equals(typeof(EventCard)))
+                    {
+                        tmpCard.Value.Location = ActionCardLocation.Fold;
+                        tmpCard.Value.Owner = ActionCardOwner.System;
+
+                        DeckCardMove(tmpCard.Value, cardtype, CardDeckType.Fold);
                     }
                     else
                     {
-                        card.Value.Location = ActionCardLocation.Graveyard;
-                        card.Value.Owner = ActionCardOwner.System;
+                        tmpCard.Value.Location = ActionCardLocation.Graveyard;
+                        tmpCard.Value.Owner = ActionCardOwner.System;
 
-                        DeckCardMove(card.Value, cardtype, CardDeckType.Graveyard);
+                        DeckCardMove(tmpCard.Value, cardtype, CardDeckType.Graveyard);
                     }
                     collectTotal[currentPlayerFlag]++;
                 }
@@ -436,11 +449,12 @@ namespace unlightvbe_kai_core
             return result;
         }
 
+
         /// <summary>
         /// 雙方玩家角色存活確認
         /// </summary>
-        /// <returns>是否通過存活確認</returns>
-        private bool PlayerCharacterHPCheck()
+        /// <returns>是否通過存活確認/是否已進行變更角色動作</returns>
+        private (bool, bool) PlayerCharacterHPCheck()
         {
             foreach (var player in PlayerDatas)
             {
@@ -458,14 +472,15 @@ namespace unlightvbe_kai_core
                     if (isReplaceable)
                     {
                         MultiUIAdapter.ChangeCharacterAction(player.PlayerType);
+                        return (true, true);
                     }
                     else
                     {
-                        return false;
+                        return (false, false);
                     }
                 }
             }
-            return true;
+            return (true, false);
         }
 
         /// <summary>
@@ -474,70 +489,77 @@ namespace unlightvbe_kai_core
         private void CharacterHPDamage(CharacterHPDamageDataModel data)
         {
             var characterData = PlayerDatas[(int)data.Player].GetCharacterData(data.CharacterVBEID) ?? throw new Exception("characterVBEID null reference");
-            int origHP = characterData.CurrentHP;
-            int setDamageNumber = data.DamageNumber;
-            bool tmpEventBloodActionDeathTypeChange = false;
 
-            if (data.IsCallEvent)
+            if (characterData.CurrentHP > 0)
             {
-                SkillCommandProxy.EventBloodActionRecord.Add(SkillAdapter.StageCallCount + 1, new());
+                int origHP = characterData.CurrentHP;
+                int setDamageNumber = data.DamageNumber;
+                bool tmpEventBloodActionDeathTypeChange = false;
 
-                SkillAdapter.StageStart(46, data.Player, true, true,
-                [
-                    ((int)data.Player).ToString(),
+                if (data.IsCallEvent)
+                {
+                    SkillCommandProxy.EventBloodActionRecord.Add(SkillAdapter.StageCallCount + 1, new());
+
+                    SkillAdapter.StageStart(46, data.Player, true, true,
+                    [
+                        ((int)data.Player).ToString(),
                     PlayerDatas[(int)data.Player].GetCharacterDataIndex(data.CharacterVBEID).ToString()!,
                     ((int)data.DamageType).ToString(),
                     data.DamageNumber.ToString(),
                     ((int)data.TriggerPlayerType).ToString(),
                     ((int)data.TriggerSkillType).ToString()
-                ]);
+                    ]);
 
-                var tmpRecord = SkillCommandProxy.EventBloodActionRecord[SkillAdapter.StageCallCount + 1];
-                SkillCommandProxy.EventBloodActionRecord.Remove(SkillAdapter.StageCallCount + 1);
+                    var tmpRecord = SkillCommandProxy.EventBloodActionRecord[SkillAdapter.StageCallCount + 1];
+                    SkillCommandProxy.EventBloodActionRecord.Remove(SkillAdapter.StageCallCount + 1);
 
-                if (tmpRecord.MainProperty.Item1) //EventBloodActionOff
-                {
-                    return;
-                }
-                else if (tmpRecord.MainProperty.Item2) //EventBloodActionChange
-                {
-                    switch (tmpRecord.RecordValue.Item1)
+                    if (tmpRecord.MainProperty.Item1) //EventBloodActionOff
                     {
-                        case NumberChangeRecordThreeVersionType.Addition:
-                            if (data.DamageType != CharacterHPDamageType.Death)
-                            {
-                                setDamageNumber += tmpRecord.RecordValue.Item2;
-                            }
-                            break;
-                        case NumberChangeRecordThreeVersionType.Subtraction:
-                            if (data.DamageType != CharacterHPDamageType.Death)
-                            {
-                                setDamageNumber -= tmpRecord.RecordValue.Item2;
-                            }
-                            break;
-                        case NumberChangeRecordThreeVersionType.Assign:
-                            if (data.DamageType == CharacterHPDamageType.Death)
-                                tmpEventBloodActionDeathTypeChange = true;
+                        return;
+                    }
+                    else if (tmpRecord.MainProperty.Item2) //EventBloodActionChange
+                    {
+                        switch (tmpRecord.RecordValue.Item1)
+                        {
+                            case NumberChangeRecordThreeVersionType.Addition:
+                                if (data.DamageType != CharacterHPDamageType.Death)
+                                {
+                                    setDamageNumber += tmpRecord.RecordValue.Item2;
+                                }
+                                break;
+                            case NumberChangeRecordThreeVersionType.Subtraction:
+                                if (data.DamageType != CharacterHPDamageType.Death)
+                                {
+                                    setDamageNumber -= tmpRecord.RecordValue.Item2;
+                                }
+                                break;
+                            case NumberChangeRecordThreeVersionType.Assign:
+                                if (data.DamageType == CharacterHPDamageType.Death)
+                                    tmpEventBloodActionDeathTypeChange = true;
 
-                            setDamageNumber = tmpRecord.RecordValue.Item2;
-                            break;
+                                setDamageNumber = tmpRecord.RecordValue.Item2;
+                                break;
+                        }
                     }
                 }
-            }
 
-            if (setDamageNumber < 0) setDamageNumber = 0;
+                if (setDamageNumber < 0) setDamageNumber = 0;
 
-            if (data.DamageType == CharacterHPDamageType.Death && !tmpEventBloodActionDeathTypeChange)
-            {
-                characterData.CurrentHP = 0;
-            }
-            else
-            {
-                characterData.CurrentHP -= setDamageNumber;
-                if (characterData.CurrentHP < 0) characterData.CurrentHP = 0;
-            }
+                if (data.DamageType == CharacterHPDamageType.Death && !tmpEventBloodActionDeathTypeChange)
+                {
+                    characterData.CurrentHP = 0;
+                }
+                else
+                {
+                    characterData.CurrentHP -= setDamageNumber;
+                    if (characterData.CurrentHP < 0) characterData.CurrentHP = 0;
+                }
 
-            MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPDamage, data.Player, origHP - characterData.CurrentHP, data.CharacterVBEID);
+                if (origHP - characterData.CurrentHP > 0)
+                {
+                    MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPDamage, data.Player, origHP - characterData.CurrentHP, data.CharacterVBEID);
+                }
+            }
         }
 
         /// <summary>
@@ -549,7 +571,7 @@ namespace unlightvbe_kai_core
         private void CharacterHPHeal(CharacterHPHealDataModel data)
         {
             var characterData = PlayerDatas[(int)data.Player].GetCharacterData(data.CharacterVBEID) ?? throw new Exception("characterVBEID null reference");
-            if (characterData.CurrentHP < characterData.Character.HP)
+            if (characterData.CurrentHP > 0 && characterData.CurrentHP < characterData.Character.HP)
             {
                 int origHP = characterData.CurrentHP;
                 int setHealNumber = data.HealNumber;
@@ -596,7 +618,10 @@ namespace unlightvbe_kai_core
                 characterData.CurrentHP += setHealNumber;
                 if (characterData.CurrentHP > characterData.Character.HP) characterData.CurrentHP = characterData.Character.HP;
 
-                MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPHeal, data.Player, characterData.CurrentHP - origHP, data.CharacterVBEID);
+                if (characterData.CurrentHP - origHP > 0)
+                {
+                    MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.CharacterHPHeal, data.Player, characterData.CurrentHP - origHP, data.CharacterVBEID);
+                }
             }
         }
 
@@ -623,6 +648,27 @@ namespace unlightvbe_kai_core
             {
                 m_playerDistance.MainProperty = newDistance;
             }
+        }
+
+        private void UIUpdateBuffData()
+        {
+            Dictionary<UserPlayerType, Dictionary<string, List<BuffDataBaseModel>>> data = [];
+            foreach (var player in System.Enum.GetValues<UserPlayerType>())
+            {
+                Dictionary<string, List<BuffDataBaseModel>> tmpdata = [];
+                foreach (var characterData in PlayerDatas[(int)player].CharacterDatas)
+                {
+                    tmpdata.Add(characterData.Character.VBEID, characterData.BuffDatas.Select(x => new BuffDataBaseModel
+                    {
+                        Identifier = x.Buff.Identifier,
+                        Value = x.Value,
+                        Total = x.Total
+                    }).ToList());
+                }
+                data.Add(player, tmpdata);
+            }
+
+            MultiUIAdapter.BuffDataUpdate(data[UserPlayerType.Player1], data[UserPlayerType.Player2]);
         }
     }
 }

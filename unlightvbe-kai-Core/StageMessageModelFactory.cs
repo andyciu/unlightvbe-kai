@@ -1,5 +1,6 @@
 ﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Enum.SkillCommand;
+using unlightvbe_kai_core.Enum.StageMessage;
 using unlightvbe_kai_core.Models.StageMessage;
 
 namespace unlightvbe_kai_core
@@ -29,6 +30,22 @@ namespace unlightvbe_kai_core
                     HealValue = Convert.ToInt32(messages[2]),
                     TriggerPlayer = (CommandPlayerRelativeThreeVersionType)Convert.ToInt32(messages[3]),
                     TriggerSkill = (TriggerSkillType)Convert.ToInt32(messages[4])
+                },
+                Type _ when type == typeof(StageMessageModel_73) => (IStageMessageModel<T>)new StageMessageModel_73
+                {
+                    RemoveType = (StageMessage73_RemoveType)Convert.ToInt32(messages[0])
+                },
+                Type _ when type == typeof(StageMessageModel_76) => (IStageMessageModel<T>)new StageMessageModel_76
+                {
+                    TargetPlayer = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(messages[0]),
+                    SkillType = (SkillType)Convert.ToInt32(messages[1]),
+                    Identifier = messages[2]
+                },
+                Type _ when type == typeof(StageMessageModel_77) => (IStageMessageModel<T>)new StageMessageModel_77
+                {
+                    TargetPlayer = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(messages[0]),
+                    SkillType = (SkillType)Convert.ToInt32(messages[1]),
+                    Identifier = messages[2]
                 },
                 _ => null,
             };

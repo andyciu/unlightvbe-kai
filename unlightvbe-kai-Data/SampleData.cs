@@ -1,7 +1,10 @@
-﻿using unlightvbe_kai_core;
+﻿using System.Reflection;
+using unlightvbe_kai_core;
 using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Enum.SkillCommand;
 using unlightvbe_kai_core.Models;
+using unlightvbe_kai_core.Models.Skill;
+using unlightvbe_kai_core.Models.SkillArgs;
 using unlightvbe_kai_core.Models.StageMessage;
 using unlightvbe_kai_Data.Character;
 
@@ -16,8 +19,10 @@ namespace unlightvbe_kai_Data
         public static readonly Random Rnd = new();
         public SampleData()
         {
-            Skill<ActiveSkill> skill1 = new(TmpActiveSkill, "VBEID001")
+            ActiveSkillModel skill1 = new()
             {
+                Function = TmpActiveSkill,
+                Identifier = "VBEID001",
                 Distance =
                         [
                             PlayerDistanceType.Middle,
@@ -54,23 +59,38 @@ namespace unlightvbe_kai_Data
                 LevelNum = 5,
                 ActiveSkills = [skill1]
             });
+            Characters.Add(new()
+            {
+                Name = "Sheri",
+                HP = 14,
+                ATK = 4,
+                DEF = 5,
+                VBEID = "N00105",
+                EventColour = "776000",
+                LevelMain = "LV",
+                LevelNum = 5,
+                ActiveSkills = [skill1]
+            });
 
             //Characters.Add(Ria.GetCharacter());
             //Characters.Add(Evarist.GetCharacter());
 
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 3; i++)
             {
                 Deck_Subs.Add(new()
                 {
                     Character = Characters[i],
                     EventCards = GetCardList_Event()
                 });
+            }
 
+            for (int i = 0; i < 2; i++)
+            {
                 Decks.Add(new()
                 {
                     Id = i,
                     Name = "D" + i.ToString(),
-                    Deck_Subs = [Deck_Subs[i]]
+                    Deck_Subs = [.. Deck_Subs]
                 });
             }
 
@@ -101,6 +121,7 @@ namespace unlightvbe_kai_Data
                     UpperNum = Rnd.Next(1, 7),
                     LowerType = ActionCardType.ATK_Gun,
                     LowerNum = Rnd.Next(1, 7),
+                    Identifier = "ASG01"
                 });
                 cards.Add(new ActionCard
                 {
@@ -108,6 +129,7 @@ namespace unlightvbe_kai_Data
                     UpperNum = Rnd.Next(1, 7),
                     LowerType = ActionCardType.DEF,
                     LowerNum = Rnd.Next(1, 7),
+                    Identifier = "ASD01"
                 });
                 cards.Add(new ActionCard
                 {
@@ -115,6 +137,7 @@ namespace unlightvbe_kai_Data
                     UpperNum = Rnd.Next(1, 7),
                     LowerType = ActionCardType.DEF,
                     LowerNum = Rnd.Next(1, 7),
+                    Identifier = "AGD01"
                 });
                 cards.Add(new ActionCard
                 {
@@ -122,6 +145,7 @@ namespace unlightvbe_kai_Data
                     UpperNum = Rnd.Next(1, 7),
                     LowerType = ActionCardType.SPE,
                     LowerNum = Rnd.Next(1, 7),
+                    Identifier = "ASS01"
                 });
                 cards.Add(new ActionCard
                 {
@@ -129,6 +153,7 @@ namespace unlightvbe_kai_Data
                     UpperNum = Rnd.Next(1, 7),
                     LowerType = ActionCardType.SPE,
                     LowerNum = Rnd.Next(1, 7),
+                    Identifier = "AGS01"
                 });
                 cards.Add(new ActionCard
                 {
@@ -136,6 +161,7 @@ namespace unlightvbe_kai_Data
                     UpperNum = Rnd.Next(1, 7),
                     LowerType = ActionCardType.SPE,
                     LowerNum = Rnd.Next(1, 7),
+                    Identifier = "MS01"
                 });
             }
 
@@ -154,6 +180,7 @@ namespace unlightvbe_kai_Data
                     UpperNum = Rnd.Next(1, 7),
                     LowerType = (ActionCardType)Rnd.Next(1, 6),
                     LowerNum = Rnd.Next(1, 7),
+                    Identifier = "RRE01"
                 });
             }
 
@@ -170,29 +197,66 @@ namespace unlightvbe_kai_Data
             return Characters.Find(x => x.VBEID == VBEID) ?? Characters[0];
         }
 
-        public static List<SkillCommandModel> TmpActiveSkill(ActiveSkillArgsModel args)
+        public static List<BuffSkillModel> GetBuffList()
+        {
+            List<BuffSkillModel> buffList = [];
+
+            var typeList = (from t in Assembly.GetExecutingAssembly().GetTypes()
+                            where t.IsClass && t.Namespace == "unlightvbe_kai_Data.Buff"
+                            select t).ToList();
+
+            foreach (var item in typeList)
+            {
+                var tmpfield = item.GetField("BuffSkillObj");
+                if (tmpfield != null)
+                {
+                    buffList.Add((BuffSkillModel)tmpfield.GetValue(null)!);
+                }
+            }
+
+            return buffList;
+        }
+
+        public static Dictionary<string, string> GetBuffNameDict()
+        {
+            Dictionary<string, string> result = [];
+            var typeList = (from t in Assembly.GetExecutingAssembly().GetTypes()
+                            where t.IsClass && t.Namespace == "unlightvbe_kai_Data.Buff"
+                            select t).ToList();
+
+            foreach (var item in typeList)
+            {
+                var tmpfield = item.GetField("BuffSkillObj");
+                if (tmpfield != null)
+                {
+                    var buffitem = (BuffSkillModel)tmpfield.GetValue(null)!;
+                    result.Add(buffitem.Identifier, buffitem.Name);
+                }
+            }
+
+            return result;
+        }
+
+        private static List<SkillCommandModel> TmpActiveSkill(ActiveSkillArgsModel args)
         {
             var commandFormater = new SkillCommandModelFormatConverter();
 
             switch (args.StageNum)
             {
                 case 94:
-                    var tmpCheck = args.CheckActiveSkillCondition();
-                    if (tmpCheck && !args.CharacterActiveSkillIsActivate[(int)UserPlayerRelativeType.Self][args.SkillIndex])
-                    {
-                        commandFormater.SkillTurnOnOffWithLineLight(true);
-                    }
-                    else if (!tmpCheck && args.CharacterActiveSkillIsActivate[(int)UserPlayerRelativeType.Self][args.SkillIndex])
-                    {
-                        commandFormater.SkillTurnOnOffWithLineLight(false);
-                    }
+                    args.CheckActiveSkillTurnOnOffStandardAction(commandFormater);
                     break;
                 case 2:
                     commandFormater.SkillAnimateStartPlay();
                     break;
                 case 61:
                     commandFormater.PersonBloodControl(CommandPlayerRelativeTwoVersionType.Opponent, 1, PersonBloodControlType.DirectDamage, 5);
-                    commandFormater.PersonBloodControl(CommandPlayerRelativeTwoVersionType.Opponent, 1, PersonBloodControlType.Heal, 2);
+                    //commandFormater.PersonBloodControl(CommandPlayerRelativeTwoVersionType.Self, 1, PersonBloodControlType.Heal, 2);
+                    commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Self, 1, "BUFFN00101", 100, 2);
+                    commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Self, 1, "BUFFN00201", 10, 1);
+                    commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Self, 1, "BUFFN00101", 999, 9);
+                    //commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Opponent, 1, "BUFFN00102", 10, 2);
+                    //commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Opponent, 1, "BUFFN00202", 10, 1);
                     commandFormater.SkillTurnOnOffWithLineLight(false);
                     break;
                 case 46:

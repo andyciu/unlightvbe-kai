@@ -2,8 +2,8 @@
 {
     public class Player
     {
-        public int PlayerId { get; set; }
-        public string Name { get; set; }
-        public Deck Deck { get; set; }
+        public required int PlayerId { get; set; }
+        public required string Name { get; set; }
+        public required Deck Deck { get; set; }
     }
 }

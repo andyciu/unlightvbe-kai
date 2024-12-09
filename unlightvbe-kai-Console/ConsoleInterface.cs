@@ -1,41 +1,80 @@
 ﻿using unlightvbe_kai_core.Enum;
 using unlightvbe_kai_core.Interface;
-using unlightvbe_kai_core.Models;
-using unlightvbe_kai_core.Models.IUserInterface;
+using unlightvbe_kai_core.Models.UserInterface;
 
 namespace unlightvbe_kai_console
 {
-    public class ConsoleInterface : IUserInterfaceAsync
+    public class ConsoleInterface : IUserInterface
     {
+        public class PlayerModel
+        {
+            public required int PlayerId { get; set; }
+            public required string Name { get; set; }
+            public required List<CharacterModel> Characters { get; set; }
+        }
+        public class CharacterModel
+        {
+            public required string Name { get; init; }
+            public string Title { get; init; } = string.Empty;
+            public required int HP { get; init; }
+            public required int ATK { get; init; }
+            public required int DEF { get; init; }
+            public required string VBEID { get; init; }
+            public required string EventColour { get; init; }
+            public required string LevelMain { get; init; }
+            public required int LevelNum { get; init; }
+        }
+
         protected class CharacterData
         {
-            public required Character Character { get; set; }
+            public required CharacterModel Character { get; set; }
             public int CurrentHP { get; set; }
+            public List<BuffData> BuffDatas { get; set; } = [];
         }
 
         protected class PlayerData
         {
-            public required Player Player { get; set; }
+            public required PlayerModel Player { get; set; }
             public required List<CharacterData> CharacterDatas { get; set; }
+        }
+
+        protected class BuffData
+        {
+            public required string Identifier { get; set; }
+            public int Value { get; set; }
+            public int Total { get; set; }
+        }
+
+        protected class CardData
+        {
+            public required int Number { get; set; }
+            public required ActionCardType UpperType { get; set; }
+            public required int UpperNum { get; set; }
+            public required ActionCardType LowerType { get; set; }
+            public required int LowerNum { get; set; }
+            public required ActionCardRelativeOwner Owner { get; set; }
+            public required ActionCardLocation Location { get; set; }
+            public required string Identifier { get; init; }
+            public required bool IsReverse { get; set; }
         }
 
         /// <summary>
         /// 執行期名稱
         /// </summary>
-        public string InstanceName { get; set; }
+        public string InstanceName { get; init; }
         protected PlayerData[] PlayerDatas { get; set; } = new PlayerData[2];
         /// <summary>
         /// 手牌清單
         /// </summary>
-        protected List<CardModel> HoldCards = [];
+        protected List<CardData> HoldCards = [];
         /// <summary>
         /// 出牌清單
         /// </summary>
-        protected List<CardModel> PlayCards = [];
+        protected List<CardData> PlayCards = [];
         /// <summary>
         /// 對手出牌清單
         /// </summary>
-        protected List<CardModel> OpponentPlayCards = [];
+        protected List<CardData> OpponentPlayCards = [];
         /// <summary>
         /// 對手手牌數量
         /// </summary>
@@ -104,27 +143,34 @@ namespace unlightvbe_kai_console
         /// 人物被動技能燈開關標記
         /// </summary>
         protected bool[,] PassiveSkillLineLight = new bool[2, 4];
-        public ConsoleInterface(string instanceName, Player selfPlayer, Player opponentPlayer)
+        /// <summary>
+        /// 讀取指令動作是否正在進行Card Click &amp; Reverse組合動作
+        /// </summary>
+        protected bool ReadActionIsOnCCR;
+        protected Dictionary<string, string> BuffNameDict = [];
+        public ConsoleInterface(string instanceName, PlayerModel selfPlayer, PlayerModel opponentPlayer, Dictionary<string, string> buffNameDict)
         {
             InstanceName = instanceName;
             PlayerDatas[(int)UserPlayerRelativeType.Self] = new()
             {
                 Player = selfPlayer,
-                CharacterDatas = selfPlayer.Deck.Deck_Subs.Select(x => new CharacterData()
+                CharacterDatas = selfPlayer.Characters.Select(x => new CharacterData()
                 {
-                    Character = x.Character,
-                    CurrentHP = x.Character.HP
+                    Character = x,
+                    CurrentHP = x.HP
                 }).ToList(),
             };
             PlayerDatas[(int)UserPlayerRelativeType.Opponent] = new()
             {
                 Player = opponentPlayer,
-                CharacterDatas = opponentPlayer.Deck.Deck_Subs.Select(x => new CharacterData()
+                CharacterDatas = opponentPlayer.Characters.Select(x => new CharacterData()
                 {
-                    Character = x.Character,
-                    CurrentHP = x.Character.HP
+                    Character = x,
+                    CurrentHP = x.HP
                 }).ToList(),
             };
+
+            BuffNameDict = buffNameDict;
         }
 
         protected virtual string ShowInstanceName()
@@ -164,20 +210,29 @@ namespace unlightvbe_kai_console
             }
         }
 
+        protected void ConsoleWrite(string message, params object?[]? arg)
+        {
+            lock (Console.Out)
+            {
+                SetConsoleColor();
+                Console.Write(ShowInstanceName() + message, arg);
+            }
+        }
+
         public void ShowStartScreen(ShowStartScreenModel data)
         {
             ConsoleWriteLine("Test_ShowStartScreen");
-            ConsoleWriteLine("PlayerSelf_Id=" + data.PlayerSelf_Id);
+            ConsoleWriteLine("PlayerSelf_Id=" + data.PlayerSelfId);
 
             Thread.Sleep(1000);
 
-            ConsoleWriteLine("PlayerOpponent_Id=" + data.PlayerOpponent_Id);
+            ConsoleWriteLine("PlayerOpponent_Id=" + data.PlayerOpponentId);
 
-            if (PlayerDatas[(int)UserPlayerRelativeType.Self].Player.PlayerId != data.PlayerSelf_Id)
+            if (PlayerDatas[(int)UserPlayerRelativeType.Self].Player.PlayerId != data.PlayerSelfId)
             {
                 ConsoleWriteLine("PlayerSelf_Id no match.");
             }
-            if (PlayerDatas[(int)UserPlayerRelativeType.Opponent].Player.PlayerId != data.PlayerOpponent_Id)
+            if (PlayerDatas[(int)UserPlayerRelativeType.Opponent].Player.PlayerId != data.PlayerOpponentId)
             {
                 ConsoleWriteLine("PlayerOpponent_Id no match.");
             }
@@ -218,6 +273,18 @@ namespace unlightvbe_kai_console
 
             while (readActionModel == null && !IsOKButtonClick)
             {
+                if (ReadActionIsOnCCR)
+                {
+                    ReadActionIsOnCCR = false;
+
+                    readActionModel = new()
+                    {
+                        Type = UserActionType.CardReverse,
+                        Value = LastReadAction!.Value
+                    };
+                    break;
+                }
+
                 string? tmpstr = string.Empty;
                 ConsoleWriteLine("=======================");
                 while (string.IsNullOrEmpty(tmpstr))
@@ -245,6 +312,17 @@ namespace unlightvbe_kai_console
                         readActionModel = new()
                         {
                             Type = UserActionType.CardReverse,
+                            Value = int.Parse(tmparr[1])
+                        };
+                        break;
+                    case "CCR":
+                        if (tmparr.Length < 2) continue;
+
+                        ReadActionIsOnCCR = true;
+
+                        readActionModel = new()
+                        {
+                            Type = UserActionType.CardClick,
                             Value = int.Parse(tmparr[1])
                         };
                         break;
@@ -316,18 +394,51 @@ namespace unlightvbe_kai_console
                             }
                         }
                         break;
+                    case "SF": //ShowBuff
+                        ConsoleWriteLine("Buff:");
+                        foreach (var playertype in Enum.GetValues<UserPlayerRelativeType>())
+                        {
+                            int tmpnum = 0;
+                            foreach (var characterdata in PlayerDatas[(int)playertype].CharacterDatas)
+                            {
+                                var tmpStr = string.Format("{0}[{1}] = {2} #{3}: ", playertype.ToString(), tmpnum++, characterdata.Character.Name, characterdata.Character.VBEID);
+                                if (characterdata.BuffDatas.Count != 0)
+                                {
+                                    ConsoleWriteLine(tmpStr);
+                                    foreach (var buffData in characterdata.BuffDatas)
+                                    {
+                                        if (BuffNameDict.TryGetValue(buffData.Identifier, out var tmpBuffName))
+                                        {
+                                            ConsoleWriteLine("[{0} #{1}]{2}/{3}", tmpBuffName, buffData.Identifier, buffData.Value, buffData.Total);
+                                        }
+                                        else
+                                        {
+                                            ConsoleWriteLine("[{0}]{1}/{2}", buffData.Identifier, buffData.Value, buffData.Total);
+                                        }
+                                    }
+                                    ConsoleWriteLine("");
+                                }
+                                else
+                                {
+                                    ConsoleWriteLine(tmpStr + "[NoBuff]");
+                                }
+                            }
+                        }
+                        break;
                     case "HELP":
                         ConsoleWriteLine("Command list(Case-insensitive):");
                         ConsoleWriteLine("CC [card Number] - CardClick");
                         ConsoleWriteLine("CR [card Number] - CardReverse");
+                        ConsoleWriteLine("CCR [card Number] - Card Click&Reverse");
                         ConsoleWriteLine("BARL - BarMoveLeft");
                         ConsoleWriteLine("BARR - BarMoveRight");
                         ConsoleWriteLine("BARS - BarMoveStay");
-                        ConsoleWriteLine("BARC - BarMoveStay");
+                        ConsoleWriteLine("BARC - BarMoveChange");
                         ConsoleWriteLine("OK - OKButtonClick");
                         ConsoleWriteLine("SC - ShowInfo(Card)");
                         ConsoleWriteLine("SI - ShowInfo(Battle)");
                         ConsoleWriteLine("SA - ShowInfo(Character)");
+                        ConsoleWriteLine("SF - ShowInfo(Buff)");
                         ConsoleWriteLine("HELP - Show command list");
                         break;
                     default:
@@ -341,23 +452,6 @@ namespace unlightvbe_kai_console
             LastReadAction = readActionModel;
             return readActionModel!;
         }
-        public Task ShowStartScreenAsync(ShowStartScreenModel data)
-        {
-            ShowStartScreen(data);
-            return Task.CompletedTask;
-        }
-
-        public Task ShowBattleMessageAsync(string message)
-        {
-            ShowBattleMessage(message);
-            return Task.CompletedTask;
-        }
-
-        public Task DrawActionCardAsync(DrawCardModel data)
-        {
-            DrawActionCard(data);
-            return Task.CompletedTask;
-        }
 
         public void DrawActionCard(DrawCardModel data)
         {
@@ -365,7 +459,18 @@ namespace unlightvbe_kai_console
 
             foreach (var card in data.SelfCards)
             {
-                HoldCards.Add(card);
+                HoldCards.Add(new()
+                {
+                    Number = card.Number,
+                    UpperType = card.UpperType,
+                    UpperNum = card.UpperNum,
+                    LowerType = card.LowerType,
+                    LowerNum = card.LowerNum,
+                    Owner = card.Owner,
+                    Location = card.Location,
+                    Identifier = card.Identifier,
+                    IsReverse = card.IsReverse,
+                });
                 ConsoleWriteLine("({0}){1}/{2}/{3}/{4}", card.Number, card.UpperType.ToString(), card.UpperNum, card.LowerType.ToString(), card.LowerNum);
                 DeckNum--;
             }
@@ -373,12 +478,6 @@ namespace unlightvbe_kai_console
             OpponentHoldCardCount += data.OpponentCardCount;
             DeckNum -= data.OpponentCardCount;
             ConsoleWriteLine("OpponentHoldCardCount=" + OpponentHoldCardCount);
-        }
-
-        public Task UpdateDataAsync(UpdateDataModel data)
-        {
-            UpdateData(data);
-            return Task.CompletedTask;
         }
 
         public void UpdateData(UpdateDataModel data)
@@ -414,10 +513,9 @@ namespace unlightvbe_kai_console
                     IsOpponentCharacterChangeing = true;
                     Task.Run(() =>
                     {
-                        ConsoleWrite("Opponent Character Changeing");
+                        ConsoleWrite("Opponent Character Changeing...");
                         while (IsOpponentCharacterChangeing)
                         {
-                            ConsoleWrite(".");
                             Thread.Sleep(1000);
                         }
                     });
@@ -430,6 +528,7 @@ namespace unlightvbe_kai_console
                         {
                             PlayerDatas[(int)UserPlayerRelativeType.Opponent].CharacterDatas.Remove(characterData);
                             PlayerDatas[(int)UserPlayerRelativeType.Opponent].CharacterDatas.Insert(0, characterData);
+                            IsOpponentCharacterChangeing = false;
                         }
                         else
                         {
@@ -447,19 +546,24 @@ namespace unlightvbe_kai_console
             }
         }
 
-        public Task DrawEventCardAsync(DrawCardModel data)
-        {
-            DrawEventCard(data);
-            return Task.CompletedTask;
-        }
-
         public void DrawEventCard(DrawCardModel data)
         {
             ConsoleWriteLine("Test_DrawEventCard");
 
             foreach (var card in data.SelfCards)
             {
-                HoldCards.Add(card);
+                HoldCards.Add(new()
+                {
+                    Number = card.Number,
+                    UpperType = card.UpperType,
+                    UpperNum = card.UpperNum,
+                    LowerType = card.LowerType,
+                    LowerNum = card.LowerNum,
+                    Owner = card.Owner,
+                    Location = card.Location,
+                    Identifier = card.Identifier,
+                    IsReverse = card.IsReverse,
+                });
                 ConsoleWriteLine("({0}){1}/{2}/{3}/{4}", card.Number, card.UpperType.ToString(), card.UpperNum, card.LowerType.ToString(), card.LowerNum);
             }
 
@@ -467,7 +571,7 @@ namespace unlightvbe_kai_console
             ConsoleWriteLine("OpponentHoldCardCount=" + OpponentHoldCardCount);
         }
 
-        private void CardReverse(CardModel card)
+        private static void CardReverse(CardData card)
         {
             var tmpType = card.UpperType;
             var tmpNum = card.UpperNum;
@@ -477,12 +581,8 @@ namespace unlightvbe_kai_console
 
             card.LowerType = tmpType;
             card.LowerNum = tmpNum;
-        }
 
-        public Task ReadActionReceiveAsync(ReadActionReceiveModel data)
-        {
-            ReadActionReceive(data);
-            return Task.CompletedTask;
+            card.IsReverse = !card.IsReverse;
         }
 
         public void ReadActionReceive(ReadActionReceiveModel data)
@@ -567,24 +667,12 @@ namespace unlightvbe_kai_console
             }
         }
 
-        public Task PhaseStartAsync(PhaseStartModel data)
-        {
-            PhaseStart(data);
-            return Task.CompletedTask;
-        }
-
         public void PhaseStart(PhaseStartModel data)
         {
             ConsoleWriteLine("Test_PhaseStart");
             ConsoleWriteLine(data.Type.ToString());
 
             PhaseType = data.Type;
-        }
-
-        public Task UpdateDataMultiAsync(UpdateDataMultiModel data)
-        {
-            UpdateDataMulti(data);
-            return Task.CompletedTask;
         }
 
         public void UpdateDataMulti(UpdateDataMultiModel data)
@@ -625,29 +713,28 @@ namespace unlightvbe_kai_console
             }
         }
 
-        public Task OpenOppenentPlayingCardAsync(OpenOppenentPlayingCardModel data)
-        {
-            OpenOppenentPlayingCard(data);
-            return Task.CompletedTask;
-        }
-
         public void OpenOppenentPlayingCard(OpenOppenentPlayingCardModel data)
         {
             ConsoleWriteLine("Test_OpenOppenentPlayingCard");
 
             foreach (var card in data.Cards)
             {
-                OpponentPlayCards.Add(card);
+                OpponentPlayCards.Add(new()
+                {
+                    Number = card.Number,
+                    UpperType = card.UpperType,
+                    UpperNum = card.UpperNum,
+                    LowerType = card.LowerType,
+                    LowerNum = card.LowerNum,
+                    Owner = card.Owner,
+                    Location = card.Location,
+                    Identifier = card.Identifier,
+                    IsReverse = card.IsReverse,
+                });
                 ConsoleWriteLine("({0}){1}/{2}/{3}/{4}", card.Number, card.UpperType.ToString(), card.UpperNum, card.LowerType.ToString(), card.LowerNum);
             }
 
             if (OpponentPlayCardCount != data.Cards.Count) ConsoleWriteLine("OpponentPlayedCardCollectCount no match.");
-        }
-
-        public Task ShowJudgmentAsync(ShowJudgmentModel data)
-        {
-            ShowJudgment(data);
-            return Task.CompletedTask;
         }
 
         public void ShowJudgment(ShowJudgmentModel data)
@@ -676,8 +763,8 @@ namespace unlightvbe_kai_console
                         tmpnum++;
                         continue;
                     }
-                    ConsoleWriteLine("Self[{1}]={2}({3}/{4}/{5}/{6})", tmpnum++, characterdata.Character.Name,
-                        characterdata.Character.VBEID, characterdata.CurrentHP, characterdata.Character.ATK, characterdata.Character.DEF);
+                    ConsoleWriteLine("Self[{0}] VBEID:{1} Name:{2}({3}/{4}/{5})", tmpnum++, characterdata.Character.VBEID,
+                        characterdata.Character.Name, characterdata.CurrentHP, characterdata.Character.ATK, characterdata.Character.DEF);
                 }
                 while (string.IsNullOrEmpty(tmpstr))
                 {
@@ -704,12 +791,6 @@ namespace unlightvbe_kai_console
 
             LastChangeCharacterAction = changeCharacterActionModel;
             return changeCharacterActionModel;
-        }
-
-        public Task UpdateDataRelativeAsync(UpdateDataRelativeModel data)
-        {
-            UpdateDataRelative(data);
-            return Task.CompletedTask;
         }
 
         public void UpdateDataRelative(UpdateDataRelativeModel data)
@@ -761,17 +842,76 @@ namespace unlightvbe_kai_console
             }
         }
 
-        public Task ShowSkillAnimateAsync(ShowSkillAnimateModel data)
-        {
-            ShowSkillAnimate(data);
-            return Task.CompletedTask;
-        }
-
         public void ShowSkillAnimate(ShowSkillAnimateModel data)
         {
             ConsoleWriteLine("Test_ShowActiveSkillAnimate");
             ConsoleWriteLine("Player: {0}, SkillID: {1}", data.Player.ToString(), data.SkillID);
             Thread.Sleep(1000);
+        }
+
+        public void BuffDataSet(BuffDataSetModel data)
+        {
+            ConsoleWriteLine("Test_BuffDataSet");
+            ConsoleWriteLine("[{0}]{1}-{2}/{3}/{4}", data.Player.ToString(), data.CharacterVBEID, data.BuffData.Identifier, data.BuffData.Value, data.BuffData.Total);
+
+            var characterData = PlayerDatas[(int)data.Player].CharacterDatas.Find(x => x.Character.VBEID == data.CharacterVBEID);
+
+            if (characterData != null)
+            {
+                if (characterData.BuffDatas.Any(x => x.Identifier == data.BuffData.Identifier))
+                {
+                    var tmpdata = characterData.BuffDatas.First(x => x.Identifier == data.BuffData.Identifier);
+
+                    tmpdata.Value = data.BuffData.Value;
+                    tmpdata.Total = data.BuffData.Total;
+                }
+                else
+                {
+                    characterData.BuffDatas.Add(new()
+                    {
+                        Identifier = data.BuffData.Identifier,
+                        Value = data.BuffData.Value,
+                        Total = data.BuffData.Total
+                    });
+                }
+            }
+        }
+        public void BuffDataUpdate(BuffDataUpdateModel data)
+        {
+            ConsoleWriteLine("Test_BuffDataUpdate");
+
+            foreach (var player in System.Enum.GetValues<UserPlayerRelativeType>())
+            {
+                foreach (var characterData in PlayerDatas[(int)player].CharacterDatas)
+                {
+                    characterData.BuffDatas.Clear();
+                    if (data.Datas[player].TryGetValue(characterData.Character.VBEID, out List<BuffDataBaseModel>? value))
+                    {
+                        characterData.BuffDatas.AddRange(value.Select(x => new BuffData
+                        {
+                            Identifier = x.Identifier,
+                            Value = x.Value,
+                            Total = x.Total,
+                        }));
+                    }
+                }
+            }
+        }
+        public void BuffDataRemove(BuffDataRemoveModel data)
+        {
+            ConsoleWriteLine("Test_BuffDataRemove");
+            ConsoleWriteLine("[{0}]{1}-{2}", data.Player.ToString(), data.CharacterVBEID, data.BuffIdentifier);
+
+            var characterData = PlayerDatas[(int)data.Player].CharacterDatas.Find(x => x.Character.VBEID == data.CharacterVBEID);
+
+            if (characterData != null)
+            {
+                var tmpbuffData = characterData.BuffDatas.Find(x => x.Identifier == data.BuffIdentifier);
+                if (tmpbuffData != null)
+                {
+                    characterData.BuffDatas.Remove(tmpbuffData);
+                }
+            }
         }
     }
 }

@@ -133,11 +133,24 @@
         ActualStatusEnd,
         PersonRemoveActualStatus,
         EventRemoveActualStatusActionOff,
+        /// <summary>
+        /// 人物角色新增異常狀態
+        /// </summary>
         PersonAddBuff,
+        /// <summary>
+        /// 異常狀態宣告當回合結束
+        /// </summary>
         BuffTurnEnd,
+        /// <summary>
+        /// 異常狀態宣告結束
+        /// </summary>
+        BuffEnd,
         PersonRemoveBuffAll,
         PersonRemoveBuffSelect,
         PersonBuffTurnChange,
+        /// <summary>
+        /// 原應執行之異常狀態消除無效化
+        /// </summary>
         EventRemoveBuffActionOff
     }
 }

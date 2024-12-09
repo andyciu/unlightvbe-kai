@@ -31,5 +31,9 @@ namespace unlightvbe_kai_core.Interface
         public void EventHealActionOff(SkillCommandDataModel data);
         public void EventHealActionChange(SkillCommandDataModel data);
         public void EventHealReflection(SkillCommandDataModel data);
+        public void PersonAddBuff(SkillCommandDataModel data);
+        public void BuffTurnEnd(SkillCommandDataModel data);
+        public void BuffEnd(SkillCommandDataModel data);
+        public void EventRemoveBuffActionOff(SkillCommandDataModel data);
     }
 }

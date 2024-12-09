@@ -23,7 +23,7 @@ namespace unlightvbe_kai_core.Models
         /// <summary>
         /// 發動之技能唯一識別碼
         /// </summary>
-        public string SkillID { get; set; }
+        public string SkillID { get; set; } = string.Empty;
         /// <summary>
         /// 執行階段型態
         /// </summary>

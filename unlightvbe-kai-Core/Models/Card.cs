@@ -11,6 +11,8 @@ namespace unlightvbe_kai_core.Models
         public int LowerNum { get; set; }
         public ActionCardOwner Owner { get; set; }
         public ActionCardLocation Location { get; set; }
+        public string Identifier { get; set; } = string.Empty;
+        public bool IsReverse { get; private set; } = false;
 
         public Card() { }
 
@@ -23,6 +25,8 @@ namespace unlightvbe_kai_core.Models
             LowerNum = card.LowerNum;
             Owner = card.Owner;
             Location = card.Location;
+            Identifier = card.Identifier;
+            IsReverse = card.IsReverse;
         }
 
         public void Reverse()
@@ -35,6 +39,8 @@ namespace unlightvbe_kai_core.Models
 
             LowerType = tmpType;
             LowerNum = tmpNum;
+
+            IsReverse = !IsReverse;
         }
     }
 }

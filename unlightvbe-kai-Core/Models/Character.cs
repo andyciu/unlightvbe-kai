@@ -1,19 +1,23 @@
-﻿namespace unlightvbe_kai_core.Models
+﻿using System.Diagnostics.CodeAnalysis;
+using unlightvbe_kai_core.Models.Skill;
+
+namespace unlightvbe_kai_core.Models
 {
     public class Character
     {
-        public string Name { get; set; } = string.Empty;
-        public string Title { get; set; } = string.Empty;
-        public int HP { get; set; }
-        public int ATK { get; set; }
-        public int DEF { get; set; }
-        public string VBEID { get; set; } = string.Empty;
-        public string EventColour { get; set; } = string.Empty;
-        public string LevelMain { get; set; } = string.Empty;
-        public int LevelNum { get; set; }
-        public List<Skill<ActiveSkill>> ActiveSkills { get; set; } = new();
-        public List<Skill<PassiveSkill>> PassiveSkills { get; set; } = new();
+        public required string Name { get; init; }
+        public string Title { get; init; } = string.Empty;
+        public required int HP { get; init; }
+        public required int ATK { get; init; }
+        public required int DEF { get; init; }
+        public required string VBEID { get; init; }
+        public required string EventColour { get; init; }
+        public required string LevelMain { get; init; }
+        public required int LevelNum { get; init; }
+        public List<ActiveSkillModel> ActiveSkills { get; init; } = [];
+        public List<PassiveSkillModel> PassiveSkills { get; init; } = [];
         public Character() { }
+        [SetsRequiredMembers]
         public Character(Character character)
         {
             Name = character.Name;
