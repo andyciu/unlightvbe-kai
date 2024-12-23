@@ -71,7 +71,7 @@ namespace unlightvbe_kai_core
         ///     </item>
         /// </list>
         /// </remarks>
-        private PropertyWithRecord<PlayerDistanceType, bool> m_playerDistance = new();
+        private PropertyWithRecord<PlayerDistanceType, bool> m_playerDistance = new(PlayerDistanceType.Middle, false);
         /// <summary>
         /// 對戰每回合攻擊優先方位標記
         /// </summary>
@@ -428,8 +428,8 @@ namespace unlightvbe_kai_core
                 int newDistance = (int)PlayerDistance + movSystemTotal;
                 var tmpNewDistanceType = newDistance switch
                 {
-                    > 2 => PlayerDistanceType.Long,
-                    < 0 => PlayerDistanceType.Close,
+                    > 3 => PlayerDistanceType.Long,
+                    < 1 => PlayerDistanceType.Close,
                     _ => (PlayerDistanceType)newDistance
                 };
 
@@ -453,12 +453,6 @@ namespace unlightvbe_kai_core
                 }
             }
 
-            MultiUIAdapter.UpdateData_All(new()
-            {
-                Type = UpdateDataType.PlayerDistanceType,
-                Value = (int)PlayerDistance
-            });
-
             MultiUIAdapter.UpdateDataRelative(UpdateDataRelativeType.AttackPhaseFirstPlayerType, AttackPhaseFirst, 0, null);
 
             //執行階段(5/6)
@@ -480,15 +474,6 @@ namespace unlightvbe_kai_core
             //執行階段(8)
             SkillAdapter.StageStart(8, AttackPhaseFirst, true, true);
 
-            //交換角色動作
-            foreach (var player in PlayerDatas)
-            {
-                if (player.MoveBarSelect == MoveBarSelectType.Change)
-                {
-                    MultiUIAdapter.ChangeCharacterAction(player.PlayerType);
-                }
-            }
-
             //角色存活檢查
             var tmpHPCheck = PlayerCharacterHPCheck();
             if (!tmpHPCheck.Item1)
@@ -501,6 +486,15 @@ namespace unlightvbe_kai_core
             }
             else
             {
+                //交換角色動作
+                foreach (var player in PlayerDatas)
+                {
+                    if (player.MoveBarSelect == MoveBarSelectType.Change)
+                    {
+                        MultiUIAdapter.ChangeCharacterAction(player.PlayerType);
+                    }
+                }
+
                 //執行階段(9)
                 SkillAdapter.StageStart(9, AttackPhaseFirst, true, true);
             }
@@ -631,7 +625,10 @@ namespace unlightvbe_kai_core
                     DiceTrue[(int)player.PlayerType] = DiceAction(player.DiceTotal);
                 }
 
-                MultiUIAdapter.UpdateDiceTrueNumber(DiceTrue[(int)UserPlayerType.Player1], DiceTrue[(int)UserPlayerType.Player2]);
+                MultiUIAdapter.UIShowDice(PlayerDatas[(int)UserPlayerType.Player1].DiceTotal, PlayerDatas[(int)UserPlayerType.Player2].DiceTotal,
+                    DiceTrue[(int)UserPlayerType.Player1], DiceTrue[(int)UserPlayerType.Player2],
+                    attackPlyaer == UserPlayerType.Player1 ? DiceType.Attack : DiceType.Defense,
+                    attackPlyaer == UserPlayerType.Player2 ? DiceType.Attack : DiceType.Defense);
 
                 //傷害計算
                 DiceTrueTotal = DiceTrue[(int)attackPlyaer] - DiceTrue[(int)defensePlayer];

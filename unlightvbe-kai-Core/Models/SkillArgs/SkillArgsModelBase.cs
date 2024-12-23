@@ -1,4 +1,5 @@
 ﻿using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Enum.SkillCommand;
 
 namespace unlightvbe_kai_core.Models.SkillArgs
 {
@@ -47,7 +48,7 @@ namespace unlightvbe_kai_core.Models.SkillArgs
         /// <summary>
         /// 當前距離
         /// </summary>
-        public PlayerDistanceType PlayerDistance { get; set; }
+        public CommandPlayerDistanceType PlayerDistance { get; set; }
         /// <summary>
         /// 當前回合數
         /// </summary>

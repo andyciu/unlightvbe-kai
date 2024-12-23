@@ -13,5 +13,7 @@ namespace unlightvbe_kai_core.Interface
         public bool OKButtonClick(UserPlayerType player);
         public int GetPlayerDiceTotalNumber(UserPlayerType player);
         public bool ChangeCharacter(UserPlayerType player, string NewCharacterVBEID);
+        public (bool, string) ChangeCharacterRandom(UserPlayerType player);
+        public bool IsMustBeChangeCharacter(UserPlayerType player);
     }
 }

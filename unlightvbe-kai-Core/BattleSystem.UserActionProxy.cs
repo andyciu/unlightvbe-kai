@@ -155,22 +155,45 @@ namespace unlightvbe_kai_core
 
             public bool ChangeCharacter(UserPlayerType player, string NewCharacterVBEID)
             {
-                for (int i = 0; i < playerDatas[(int)player].CharacterDatas.Count; i++)
+                var query = playerDatas[(int)player].CharacterDatas.Where(x => x.CurrentHP > 0 && x.Character.VBEID == NewCharacterVBEID);
+
+                if (query.Any())
                 {
-                    var characterData = playerDatas[(int)player].CharacterDatas[i];
-                    if (characterData.CurrentHP > 0 && characterData.Character.VBEID == NewCharacterVBEID)
-                    {
-                        playerDatas[(int)player].CharacterDatas.RemoveAt(i);
-                        playerDatas[(int)player].CharacterDatas.Insert(0, characterData);
-                        return true;
-                    }
+                    var characterData = query.First();
+                    playerDatas[(int)player].CharacterDatas.Remove(characterData);
+                    playerDatas[(int)player].CharacterDatas.Insert(0, characterData);
+                    return true;
                 }
+
                 return false;
+            }
+
+            public (bool, string) ChangeCharacterRandom(UserPlayerType player)
+            {
+                var query = playerDatas[(int)player].CharacterDatas.Where(x => x != playerDatas[(int)player].CurrentCharacter && x.CurrentHP > 0);
+
+                if (query.Any())
+                {
+                    Random Rnd = new(DateTime.Now.Millisecond);
+                    var tmpRndNum = Rnd.Next(query.Count());
+
+                    var characterData = query.ElementAt(tmpRndNum);
+                    playerDatas[(int)player].CharacterDatas.Remove(characterData);
+                    playerDatas[(int)player].CharacterDatas.Insert(0, characterData);
+                    return (true, characterData.Character.VBEID);
+                }
+
+                return (false, "");
             }
 
             public int GetPlayerDiceTotalNumber(UserPlayerType player)
             {
                 return playerDatas[(int)player].DiceTotal;
+            }
+
+            public bool IsMustBeChangeCharacter(UserPlayerType player)
+            {
+                return playerDatas[(int)player].CurrentCharacter.CurrentHP <= 0;
             }
 
             public bool OKButtonClick(UserPlayerType player)

@@ -1,4 +1,5 @@
 ﻿using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Enum.SkillCommand;
 
 namespace unlightvbe_kai_core.Models.Skill
 {
@@ -11,7 +12,7 @@ namespace unlightvbe_kai_core.Models.Skill
         /// <summary>
         /// 距離
         /// </summary>
-        public required List<PlayerDistanceType> Distance { get; init; } = [];
+        public required List<CommandPlayerDistanceType> Distance { get; init; } = [];
         /// <summary>
         /// 卡片條件集合
         /// </summary>

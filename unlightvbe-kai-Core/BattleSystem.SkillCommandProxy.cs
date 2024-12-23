@@ -381,6 +381,8 @@ namespace unlightvbe_kai_core
                         break;
                 }
 
+                if (battleSystem.TurnNum < 1) battleSystem.TurnNum = 1;
+
                 battleSystem.MultiUIAdapter.UpdateData_All(new()
                 {
                     Type = UpdateDataType.TurnNumber,
@@ -418,7 +420,7 @@ namespace unlightvbe_kai_core
                 {
                     tmpDiceTrue[i] = DiceAction(playerDatas[i].DiceTotal);
                 }
-                //傷害計算
+                //正面骰數計算
                 UserPlayerType attackPlyaer, defensePlayer;
                 attackPlyaer = battleSystem.Phase[(int)UserPlayerType.Player1] == PhaseType.Attack ? UserPlayerType.Player1 : UserPlayerType.Player2;
                 defensePlayer = attackPlyaer.GetOppenentPlayer();
@@ -433,6 +435,11 @@ namespace unlightvbe_kai_core
                         tmpDiceTrue[(int)UserPlayerType.Player2].ToString(),
                         tmpDiceTrueTotal.ToString()
                     ]);
+
+                battleSystem.MultiUIAdapter.UIShowDice(playerDatas[(int)UserPlayerType.Player1].DiceTotal, playerDatas[(int)UserPlayerType.Player2].DiceTotal,
+                    tmpDiceTrue[(int)UserPlayerType.Player1], tmpDiceTrue[(int)UserPlayerType.Player2],
+                    attackPlyaer == UserPlayerType.Player1 ? DiceType.Attack : DiceType.Defense,
+                    attackPlyaer == UserPlayerType.Player2 ? DiceType.Attack : DiceType.Defense);
             }
 
             /// <summary>
@@ -448,9 +455,9 @@ namespace unlightvbe_kai_core
                     (data.StageType != SkillStageType.Normal && data.StageType != SkillStageType.Event))
                 { CommandExportException(); return; }
 
-                var newDistance = (PlayerDistanceType)Convert.ToInt32(data.Message[0]);
+                var newDistance = (CommandPlayerDistanceType)Convert.ToInt32(data.Message[0]);
 
-                battleSystem.ChangePlayerDistance(newDistance, true, data.Player.ToTriggerPlayerType());
+                battleSystem.ChangePlayerDistance(newDistance.ToPlayerDistanceType(), true, data.Player.ToTriggerPlayerType());
             }
 
             /// <summary>

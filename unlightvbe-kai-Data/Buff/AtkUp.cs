@@ -23,9 +23,7 @@ namespace unlightvbe_kai_Data.Buff
             switch (args.StageNum)
             {
                 case 45:
-                    if (args.CharacterIsOnField && args.Phase == PhaseType.Attack &&
-                        ((args.PlayerDistance == PlayerDistanceType.Close && args.ActionCardTotal[(int)UserPlayerRelativeType.Self][ActionCardType.ATK_Sword] > 0) ||
-                        (args.PlayerDistance != PlayerDistanceType.Close && args.ActionCardTotal[(int)UserPlayerRelativeType.Self][ActionCardType.ATK_Gun] > 0)))
+                    if (args.CharacterIsOnField && args.Phase == PhaseType.Attack)
                     {
                         commandFormater.EventPersonAbilityDiceChange(
                             CommandPlayerRelativeTwoVersionType.Self, NumberChangeRecordThreeVersionType.Addition, args.BuffValue);

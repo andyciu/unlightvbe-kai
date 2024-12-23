@@ -12,22 +12,37 @@ namespace unlightvbe_kai_Data
 {
     public class SampleData
     {
-        public List<unlightvbe_kai_core.Models.Character> Characters { get; set; } = [];
-        public List<Deck_Sub> Deck_Subs { get; set; } = [];
-        public List<Deck> Decks { get; set; } = [];
-        public List<Player> Players { get; set; } = [];
-        public static readonly Random Rnd = new();
-        public SampleData()
+        private List<Player> Players { get; set; } = [];
+        private static readonly Random Rnd = new();
+
+        public class SampleCharacter(int num)
         {
-            ActiveSkillModel skill1 = new()
+            private int tmpActiveSkill2_DiceTotalTrue = 0;
+
+            public unlightvbe_kai_core.Models.Character GetCharacter()
+            {
+                return new()
+                {
+                    Name = "Sample" + num.ToString(),
+                    HP = 12,
+                    ATK = 7,
+                    DEF = 7,
+                    VBEID = "SAMPLE" + num.ToString(),
+                    EventColour = "325000",
+                    LevelMain = "LV",
+                    LevelNum = 5,
+                    ActiveSkills = [Skill1, Skill2]
+                };
+            }
+            public ActiveSkillModel Skill1 => new()
             {
                 Function = TmpActiveSkill,
-                Identifier = "VBEID001",
+                Identifier = string.Format("VBEIDSAMPLE{0}001", num),
                 Distance =
                         [
-                            PlayerDistanceType.Middle,
-                            PlayerDistanceType.Close,
-                            PlayerDistanceType.Long,
+                            CommandPlayerDistanceType.Middle,
+                            CommandPlayerDistanceType.Close,
+                            CommandPlayerDistanceType.Long,
                         ],
                 Phase = PhaseType.Move,
                 StageNumber = [94, 2, 61, 46, 48],
@@ -35,77 +50,155 @@ namespace unlightvbe_kai_Data
                 Name = "TmpActiveSkill"
             };
 
-            Characters.Add(new()
+            public ActiveSkillModel Skill2 => new()
             {
-                Name = "Ria",
-                HP = 9,
-                ATK = 5,
-                DEF = 10,
-                VBEID = "S00105",
-                EventColour = "357000",
-                LevelMain = "LV",
-                LevelNum = 5,
-                ActiveSkills = [skill1]
-            });
-            Characters.Add(new()
-            {
-                Name = "Evarist",
-                HP = 12,
-                ATK = 7,
-                DEF = 7,
-                VBEID = "N01105",
-                EventColour = "325000",
-                LevelMain = "LV",
-                LevelNum = 5,
-                ActiveSkills = [skill1]
-            });
-            Characters.Add(new()
-            {
-                Name = "Sheri",
-                HP = 14,
-                ATK = 4,
-                DEF = 5,
-                VBEID = "N00105",
-                EventColour = "776000",
-                LevelMain = "LV",
-                LevelNum = 5,
-                ActiveSkills = [skill1]
-            });
-
-            //Characters.Add(Ria.GetCharacter());
-            //Characters.Add(Evarist.GetCharacter());
-
-            for (int i = 0; i < 3; i++)
-            {
-                Deck_Subs.Add(new()
+                Function = TmpActiveSkill_2,
+                Identifier = string.Format("VBEIDSAMPLE{0}002", num),
+                Distance =
+                        [
+                            CommandPlayerDistanceType.Middle,
+                            CommandPlayerDistanceType.Close,
+                            CommandPlayerDistanceType.Long,
+                        ],
+                Phase = PhaseType.Attack,
+                StageNumber = [42, 45, 10, 13, 47, 62, 20],
+                Cards = [new()
                 {
-                    Character = Characters[i],
-                    EventCards = GetCardList_Event()
-                });
+                    Scope = SkillCardConditionScopeType.Above,
+                    CardType = ActionCardType.None,
+                    Number = 1,
+                }],
+                Name = "TmpActiveSkill_2"
+            };
+
+            private List<SkillCommandModel> TmpActiveSkill(ActiveSkillArgsModel args)
+            {
+                var commandFormater = new SkillCommandModelFormatConverter();
+
+                switch (args.StageNum)
+                {
+                    case 94:
+                        args.CheckActiveSkillTurnOnOffStandardAction(commandFormater);
+                        break;
+                    case 2:
+                        commandFormater.SkillAnimateStartPlay();
+                        commandFormater.PersonMoveControl(CommandPlayerRelativeTwoVersionType.Self, NumberChangeRecordThreeVersionType.Addition, 3);
+                        commandFormater.PersonMoveActionChange(CommandPlayerRelativeTwoVersionType.Self, PersonMoveActionType.BarMoveLeft);
+                        commandFormater.BattleTurnControl(NumberChangeRecordTwoVersionType.Addition, 1);
+                        commandFormater.SkillTurnOnOffWithLineLight(false);
+                        break;
+                    case 61:
+                        commandFormater.PersonBloodControl(CommandPlayerRelativeTwoVersionType.Opponent, 1, PersonBloodControlType.DirectDamage, 5);
+                        //commandFormater.PersonBloodControl(CommandPlayerRelativeTwoVersionType.Self, 1, PersonBloodControlType.Heal, 2);
+                        commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Self, 1, "BUFFN00101", 100, 2);
+                        commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Self, 1, "BUFFN00201", 10, 1);
+                        commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Self, 1, "BUFFN00101", 999, 9);
+                        //commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Opponent, 1, "BUFFN00102", 10, 2);
+                        //commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Opponent, 1, "BUFFN00202", 10, 1);
+                        commandFormater.SkillLineLightAnother(SkillType.ActiveSkill, 2, true);
+                        commandFormater.SkillTurnOnOffAnother(SkillType.ActiveSkill, 2, true);
+                        break;
+                    case 46:
+                        var messageModel46 = (StageMessageModel_46)StageMessageModelFactory.GetModel<StageMessageModel_46>(args.StageMessage)!;
+                        if (messageModel46.TargetPlayer == CommandPlayerRelativeTwoVersionType.Self)
+                        {
+                            commandFormater.EventBloodActionChange(NumberChangeRecordThreeVersionType.Subtraction, 1);
+                            commandFormater.EventBloodReflection(CommandPlayerRelativeTwoVersionType.Opponent, 1, 1);
+                        }
+                        break;
+                    case 48:
+                        var messageModel48 = (StageMessageModel_48)StageMessageModelFactory.GetModel<StageMessageModel_48>(args.StageMessage)!;
+                        if (messageModel48.TargetPlayer == CommandPlayerRelativeTwoVersionType.Opponent)
+                        {
+                            commandFormater.EventHealActionOff();
+                        }
+                        break;
+                }
+
+                return commandFormater.Output();
             }
 
-            for (int i = 0; i < 2; i++)
+            private List<SkillCommandModel> TmpActiveSkill_2(ActiveSkillArgsModel args)
             {
-                Decks.Add(new()
-                {
-                    Id = i,
-                    Name = "D" + i.ToString(),
-                    Deck_Subs = [.. Deck_Subs]
-                });
-            }
+                var commandFormater = new SkillCommandModelFormatConverter();
 
+                switch (args.StageNum)
+                {
+                    case 42:
+                        args.CheckActiveSkillTurnOnOffStandardAction(commandFormater);
+                        break;
+                    case 45:
+                        commandFormater.EventTotalDiceChange(CommandPlayerRelativeTwoVersionType.Self, NumberChangeRecordSixVersionType.Addition, 200);
+                        commandFormater.EventTotalDiceChange(CommandPlayerRelativeTwoVersionType.Opponent, NumberChangeRecordSixVersionType.Subtraction, 100);
+                        break;
+                    case 10:
+                        commandFormater.BattleMoveControl(CommandPlayerDistanceType.Close);
+                        commandFormater.PersonTotalDiceControl(CommandPlayerRelativeTwoVersionType.Self, NumberChangeRecordSixVersionType.Division_Floor, 2);
+                        commandFormater.SkillAnimateStartPlay();
+                        break;
+                    case 13:
+                        this.tmpActiveSkill2_DiceTotalTrue = 0;
+                        for (int i = 0; i < 10; i++)
+                        {
+                            commandFormater.BattleStartDice();
+                        }
+                        break;
+                    case 47:
+                        var messageModel47 = (StageMessageModel_47)StageMessageModelFactory.GetModel<StageMessageModel_47>(args.StageMessage)!;
+                        if (messageModel47.TriggerPlayer == CommandPlayerRelativeThreeVersionType.Opponent)
+                        {
+                            commandFormater.EventMoveActionOff();
+                        }
+                        break;
+                    case 62:
+                        var messageModel62 = (StageMessageModel_62)StageMessageModelFactory.GetModel<StageMessageModel_62>(args.StageMessage)!;
+                        this.tmpActiveSkill2_DiceTotalTrue += messageModel62.DiceTrueTotal;
+                        break;
+                    case 20:
+                        if (args.Phase == PhaseType.Attack)
+                        {
+                            commandFormater.AttackTrueDiceControl(NumberChangeRecordThreeVersionType.Addition, this.tmpActiveSkill2_DiceTotalTrue);
+                            commandFormater.SkillTurnOnOffWithLineLight(false);
+                        }
+                        break;
+                }
+
+                return commandFormater.Output();
+            }
+        }
+
+        public SampleData()
+        {
             Players.Add(new()
             {
                 Name = "AAA",
                 PlayerId = 1,
-                Deck = Decks[0]
+                Deck = new()
+                {
+                    Id = 1,
+                    Name = "D1",
+                    Deck_Subs = Enumerable.Range(1, 3).Select(i => new Deck_Sub
+                    {
+                        Character = new SampleCharacter(i).GetCharacter(),
+                        EventCards = GetCardList_Event()
+                    }).ToList()
+                }
             });
 
             Players.Add(new()
             {
                 Name = "BBB",
                 PlayerId = 2,
-                Deck = Decks[1]
+                Deck = new()
+                {
+                    Id = 2,
+                    Name = "D2",
+                    Deck_Subs = Enumerable.Range(4, 3).Select(i => new Deck_Sub
+                    {
+                        Character = new SampleCharacter(i).GetCharacter(),
+                        EventCards = GetCardList_Event()
+                    }).ToList()
+                }
             });
         }
 
@@ -192,11 +285,6 @@ namespace unlightvbe_kai_Data
             return Players.Find(x => x.PlayerId == id) ?? Players[0];
         }
 
-        public unlightvbe_kai_core.Models.Character GetCharacter(string VBEID)
-        {
-            return Characters.Find(x => x.VBEID == VBEID) ?? Characters[0];
-        }
-
         public static List<BuffSkillModel> GetBuffList()
         {
             List<BuffSkillModel> buffList = [];
@@ -235,48 +323,6 @@ namespace unlightvbe_kai_Data
             }
 
             return result;
-        }
-
-        private static List<SkillCommandModel> TmpActiveSkill(ActiveSkillArgsModel args)
-        {
-            var commandFormater = new SkillCommandModelFormatConverter();
-
-            switch (args.StageNum)
-            {
-                case 94:
-                    args.CheckActiveSkillTurnOnOffStandardAction(commandFormater);
-                    break;
-                case 2:
-                    commandFormater.SkillAnimateStartPlay();
-                    break;
-                case 61:
-                    commandFormater.PersonBloodControl(CommandPlayerRelativeTwoVersionType.Opponent, 1, PersonBloodControlType.DirectDamage, 5);
-                    //commandFormater.PersonBloodControl(CommandPlayerRelativeTwoVersionType.Self, 1, PersonBloodControlType.Heal, 2);
-                    commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Self, 1, "BUFFN00101", 100, 2);
-                    commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Self, 1, "BUFFN00201", 10, 1);
-                    commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Self, 1, "BUFFN00101", 999, 9);
-                    //commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Opponent, 1, "BUFFN00102", 10, 2);
-                    //commandFormater.PersonAddBuff(CommandPlayerRelativeTwoVersionType.Opponent, 1, "BUFFN00202", 10, 1);
-                    commandFormater.SkillTurnOnOffWithLineLight(false);
-                    break;
-                case 46:
-                    var messageModel46 = (StageMessageModel_46)StageMessageModelFactory.GetModel<StageMessageModel_46>(args.StageMessage)!;
-                    if (messageModel46.TargetPlayer == CommandPlayerRelativeTwoVersionType.Self)
-                    {
-                        commandFormater.EventBloodActionChange(NumberChangeRecordThreeVersionType.Subtraction, 1);
-                        commandFormater.EventBloodReflection(CommandPlayerRelativeTwoVersionType.Opponent, 1, 1);
-                    }
-                    break;
-                case 48:
-                    var messageModel48 = (StageMessageModel_48)StageMessageModelFactory.GetModel<StageMessageModel_48>(args.StageMessage)!;
-                    if (messageModel48.TargetPlayer == CommandPlayerRelativeTwoVersionType.Opponent)
-                    {
-                        commandFormater.EventHealActionOff();
-                    }
-                    break;
-            }
-
-            return commandFormater.Output();
         }
     }
 }

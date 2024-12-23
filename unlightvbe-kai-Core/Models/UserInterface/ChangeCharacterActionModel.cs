@@ -2,6 +2,7 @@
 {
     public record ChangeCharacterActionModel
     {
+        public required bool IsChange { get; init; }
         public required string NewCharacterVBEID { get; init; }
     }
 }

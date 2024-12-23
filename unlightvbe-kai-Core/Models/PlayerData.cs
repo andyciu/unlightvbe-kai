@@ -1,5 +1,4 @@
 ﻿using unlightvbe_kai_core.Enum;
-using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models.SkillCommand;
 
 namespace unlightvbe_kai_core.Models
@@ -8,13 +7,7 @@ namespace unlightvbe_kai_core.Models
     {
         public Player Player { get; }
         public List<CharacterData> CharacterDatas { get; set; }
-        public CharacterData CurrentCharacter
-        {
-            get
-            {
-                return CharacterDatas[0];
-            }
-        }
+        public CharacterData CurrentCharacter => CharacterDatas[0];
         /// <summary>
         /// 目前卡牌最大數量上限
         /// </summary>

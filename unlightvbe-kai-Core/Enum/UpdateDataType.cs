@@ -11,6 +11,7 @@
         OKButtonOpen,
         OpponentCharacterChangeBegin,
         OpponentCharacterChangeAction,
-        ActiveSkillLineLight
+        ActiveSkillLineLight,
+        SelfCharacterChangeRandomAction
     }
 }

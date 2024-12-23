@@ -12,6 +12,7 @@
         BarMoveStay,
         BarMoveChange,
         OKButtonClick,
-        ChangeCharacter
+        ChangeCharacter,
+        ChangeCharacterCancel
     }
 }

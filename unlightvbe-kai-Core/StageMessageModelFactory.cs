@@ -23,6 +23,12 @@ namespace unlightvbe_kai_core
                     TriggerPlayer = (CommandPlayerRelativeThreeVersionType)Convert.ToInt32(messages[4]),
                     TriggerSkill = (TriggerSkillType)Convert.ToInt32(messages[5])
                 },
+                Type _ when type == typeof(StageMessageModel_47) => (IStageMessageModel<T>)new StageMessageModel_47
+                {
+                    DistanceBefore = (CommandPlayerDistanceType)Convert.ToInt32(messages[0]),
+                    DistanceAfter = (CommandPlayerDistanceType)Convert.ToInt32(messages[1]),
+                    TriggerPlayer = (CommandPlayerRelativeThreeVersionType)Convert.ToInt32(messages[2])
+                },
                 Type _ when type == typeof(StageMessageModel_48) => (IStageMessageModel<T>)new StageMessageModel_48
                 {
                     TargetPlayer = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(messages[0]),
@@ -30,6 +36,12 @@ namespace unlightvbe_kai_core
                     HealValue = Convert.ToInt32(messages[2]),
                     TriggerPlayer = (CommandPlayerRelativeThreeVersionType)Convert.ToInt32(messages[3]),
                     TriggerSkill = (TriggerSkillType)Convert.ToInt32(messages[4])
+                },
+                Type _ when type == typeof(StageMessageModel_62) => (IStageMessageModel<T>)new StageMessageModel_62
+                {
+                    DiceTotal = [Convert.ToInt32(messages[0]), Convert.ToInt32(messages[1])],
+                    DiceTrue = [Convert.ToInt32(messages[2]), Convert.ToInt32(messages[3])],
+                    DiceTrueTotal = Convert.ToInt32(messages[4])
                 },
                 Type _ when type == typeof(StageMessageModel_73) => (IStageMessageModel<T>)new StageMessageModel_73
                 {

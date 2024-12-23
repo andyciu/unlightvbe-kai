@@ -1,4 +1,5 @@
 ﻿using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Enum.SkillCommand;
 using unlightvbe_kai_core.Models.UserInterface;
 
 namespace unlightvbe_kai_core.Models.SkillArgs
@@ -39,7 +40,7 @@ namespace unlightvbe_kai_core.Models.SkillArgs
         /// <summary>
         /// 技能指定發動條件(距離)
         /// </summary>
-        public List<PlayerDistanceType> SkillDistance { get; set; } = [];
+        public List<CommandPlayerDistanceType> SkillDistance { get; set; } = [];
         /// <summary>
         /// 技能指定發動條件(卡片條件集合)
         /// </summary>

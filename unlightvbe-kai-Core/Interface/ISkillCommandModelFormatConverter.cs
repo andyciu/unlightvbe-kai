@@ -21,7 +21,7 @@ namespace unlightvbe_kai_core.Interface
         public void PersonTotalDiceControl(CommandPlayerRelativeTwoVersionType player, NumberChangeRecordSixVersionType recordType, int value);
         public void AttackTrueDiceControl(NumberChangeRecordThreeVersionType recordType, int value);
         public void BattleStartDice();
-        public void BattleMoveControl(PlayerDistanceType distanceType);
+        public void BattleMoveControl(CommandPlayerDistanceType distanceType);
         public void EventMoveActionOff();
         public void PersonMoveControl(CommandPlayerRelativeTwoVersionType player, NumberChangeRecordThreeVersionType recordType, int value);
         public void PersonMoveActionChange(CommandPlayerRelativeTwoVersionType player, PersonMoveActionType recordType);

@@ -273,7 +273,7 @@ namespace unlightvbe_kai_core
                 model.DiceTrue[1] = battleSystem.DiceTrue[(int)oppenentPlayer];
                 model.DiceTrueTotal = battleSystem.DiceTrueTotal;
 
-                model.PlayerDistance = battleSystem.PlayerDistance;
+                model.PlayerDistance = battleSystem.PlayerDistance.ToCommandPlayerDistanceType();
                 model.TurnNum = battleSystem.TurnNum;
                 model.DeckNum = battleSystem.CardDecks[CardDeckType.Deck].Count;
                 model.Phase = battleSystem.Phase[(int)startPlayer];

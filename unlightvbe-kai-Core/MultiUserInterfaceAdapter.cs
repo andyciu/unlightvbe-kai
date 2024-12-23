@@ -273,24 +273,24 @@ namespace unlightvbe_kai_core
             Task.Run(() => { ReadActionTask(player, phaseType); }).Wait();
         }
 
-        public void UpdateDiceTrueNumber(int p1_Total, int p2_Total)
+        public void UIShowDice(int p1_Total, int p2_Total, int p1_True, int p2_True, DiceType p1_type, DiceType p2_type)
         {
             Task task1 = Task.Run(() =>
             {
-                UserInterfaces[(int)UserPlayerType.Player1].UpdateDataMulti(new()
+                UserInterfaces[(int)UserPlayerType.Player1].ShowDice(new()
                 {
-                    Type = UpdateDataMultiType.DiceTrue,
-                    Self = p1_Total,
-                    Opponent = p2_Total
+                    DiceTotal = [p1_Total, p2_Total],
+                    DiceTrue = [p1_True, p2_True],
+                    DiceType = [p1_type, p2_type]
                 });
             });
             Task task2 = Task.Run(() =>
             {
-                UserInterfaces[(int)UserPlayerType.Player2].UpdateDataMulti(new()
+                UserInterfaces[(int)UserPlayerType.Player2].ShowDice(new()
                 {
-                    Type = UpdateDataMultiType.DiceTrue,
-                    Self = p2_Total,
-                    Opponent = p1_Total
+                    DiceTotal = [p2_Total, p1_Total],
+                    DiceTrue = [p2_True, p1_True],
+                    DiceType = [p2_type, p1_type]
                 });
             });
             Task.WhenAll(task1, task2).Wait();
@@ -523,7 +523,7 @@ namespace unlightvbe_kai_core
         private void ChangeCharacterActionTask(UserPlayerType player)
         {
             UserPlayerType OpponentPlayer = player.GetOppenentPlayer();
-            string playerNewCharacterVBEID;
+            string playerNewCharacterVBEID = string.Empty;
 
             UserInterfaces[(int)OpponentPlayer].UpdateData(new()
             {
@@ -533,19 +533,52 @@ namespace unlightvbe_kai_core
             while (true)
             {
                 var actionModel = UserInterfaces[(int)player].ChangeCharacterAction();
-                UserInterfaces[(int)player].ShowBattleMessage(actionModel.NewCharacterVBEID);
 
-                var result = UserActionProxy.ChangeCharacter(player, actionModel.NewCharacterVBEID);
-                UserInterfaces[(int)player].ReadActionReceive(new()
+                if (actionModel.IsChange)
                 {
-                    Type = ReadActionReceiveType.ChangeCharacter,
-                    IsSuccess = result
-                });
+                    UserInterfaces[(int)player].ShowBattleMessage(actionModel.NewCharacterVBEID);
 
-                if (result)
+                    var result = UserActionProxy.ChangeCharacter(player, actionModel.NewCharacterVBEID);
+
+                    UserInterfaces[(int)player].ReadActionReceive(new()
+                    {
+                        Type = ReadActionReceiveType.ChangeCharacter,
+                        IsSuccess = result
+                    });
+
+                    if (result)
+                    {
+                        playerNewCharacterVBEID = actionModel.NewCharacterVBEID;
+                        break;
+                    }
+                }
+                else
                 {
-                    playerNewCharacterVBEID = actionModel.NewCharacterVBEID;
-                    break;
+                    if (UserActionProxy.IsMustBeChangeCharacter(player))
+                    {
+                        var result = UserActionProxy.ChangeCharacterRandom(player);
+
+                        if (result.Item1)
+                        {
+                            playerNewCharacterVBEID = result.Item2;
+
+                            UserInterfaces[(int)player].UpdateData(new()
+                            {
+                                Type = UpdateDataType.SelfCharacterChangeRandomAction,
+                                Message = playerNewCharacterVBEID
+                            });
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        UserInterfaces[(int)player].ReadActionReceive(new()
+                        {
+                            Type = ReadActionReceiveType.ChangeCharacterCancel,
+                            IsSuccess = true
+                        });
+                        break;
+                    }
                 }
             }
 
@@ -554,7 +587,16 @@ namespace unlightvbe_kai_core
                 UserInterfaces[(int)OpponentPlayer].UpdateData(new()
                 {
                     Type = UpdateDataType.OpponentCharacterChangeAction,
+                    Value = 1,
                     Message = playerNewCharacterVBEID
+                });
+            }
+            else
+            {
+                UserInterfaces[(int)OpponentPlayer].UpdateData(new()
+                {
+                    Type = UpdateDataType.OpponentCharacterChangeAction,
+                    Value = 0
                 });
             }
         }

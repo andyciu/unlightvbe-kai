@@ -9,7 +9,7 @@ namespace unlightvbe_kai_Data.Character
 {
     public class Ria
     {
-        public static unlightvbe_kai_core.Models.Character GetCharacter()
+        public unlightvbe_kai_core.Models.Character GetCharacter()
         {
             return new()
             {
@@ -25,15 +25,15 @@ namespace unlightvbe_kai_Data.Character
             };
         }
 
-        private static readonly ActiveSkillModel ActiveSkillObj_1 = new()
+        private ActiveSkillModel ActiveSkillObj_1 => new()
         {
             Function = ActiveSkillFuc_1,
             Identifier = "PNAKS00101",
             Distance =
             [
-                PlayerDistanceType.Middle,
-                PlayerDistanceType.Close,
-                PlayerDistanceType.Long,
+                CommandPlayerDistanceType.Middle,
+                CommandPlayerDistanceType.Close,
+                CommandPlayerDistanceType.Long,
             ],
             Phase = PhaseType.Attack,
             StageNumber = [42, 45, 11],
@@ -46,7 +46,7 @@ namespace unlightvbe_kai_Data.Character
             Name = "輪旋曲-琉璃色的微風"
         };
 
-        private static List<SkillCommandModel> ActiveSkillFuc_1(ActiveSkillArgsModel args)
+        private List<SkillCommandModel> ActiveSkillFuc_1(ActiveSkillArgsModel args)
         {
             var commandFormater = new SkillCommandModelFormatConverter();
 

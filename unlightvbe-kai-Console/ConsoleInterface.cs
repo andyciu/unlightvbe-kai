@@ -1,4 +1,5 @@
 ﻿using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Enum.SkillCommand;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models.UserInterface;
 
@@ -104,10 +105,6 @@ namespace unlightvbe_kai_console
         /// </summary>
         protected int[] DiceTotalNum = new int[2];
         /// <summary>
-        /// 雙方當前擲骰有效數
-        /// </summary>
-        protected int[] DiceTrueNum = new int[2];
-        /// <summary>
         /// 我方移動階段行動選擇
         /// </summary>
         protected MoveBarSelectType MoveBarSelectType;
@@ -122,7 +119,7 @@ namespace unlightvbe_kai_console
         /// <summary>
         /// 玩家雙方場上距離
         /// </summary>
-        protected PlayerDistanceType PlayerDistance = PlayerDistanceType.Middle;
+        protected CommandPlayerDistanceType PlayerDistance = CommandPlayerDistanceType.Middle;
         /// <summary>
         /// 對戰每回合攻擊優先方位標記
         /// </summary>
@@ -504,7 +501,7 @@ namespace unlightvbe_kai_console
                     OpponentPlayCardCount += data.Value;
                     break;
                 case UpdateDataType.PlayerDistanceType:
-                    PlayerDistance = (PlayerDistanceType)data.Value;
+                    PlayerDistance = (CommandPlayerDistanceType)data.Value;
                     break;
                 case UpdateDataType.OKButtonOpen:
                     IsOKButtonClick = false;
@@ -521,7 +518,7 @@ namespace unlightvbe_kai_console
                     });
                     break;
                 case UpdateDataType.OpponentCharacterChangeAction:
-                    if (!string.IsNullOrEmpty(data.Message))
+                    if (data.Value == 1 && !string.IsNullOrEmpty(data.Message))
                     {
                         characterData = PlayerDatas[(int)UserPlayerRelativeType.Opponent].CharacterDatas.Find(x => x.Character.VBEID == data.Message!);
                         if (characterData != null)
@@ -535,10 +532,30 @@ namespace unlightvbe_kai_console
                             ConsoleWriteLine("OpponentCharacterChangeAction VBEID not found.");
                         }
                     }
+                    else
+                    {
+                        ConsoleWriteLine("OpponentCharacterChangeAction Canceled.");
+                    }
 
                     break;
                 case UpdateDataType.ActiveSkillLineLight:
                     ActiveSkillLineLight[data.Value] = Convert.ToBoolean(data.Message);
+                    break;
+                case UpdateDataType.SelfCharacterChangeRandomAction:
+                    if (!string.IsNullOrEmpty(data.Message))
+                    {
+                        characterData = PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas.Find(x => x.Character.VBEID == data.Message!);
+                        if (characterData != null)
+                        {
+                            PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas.Remove(characterData);
+                            PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas.Insert(0, characterData);
+                        }
+                        else
+                        {
+                            ConsoleWriteLine("SelfCharacterChangeRandomAction VBEID not found.");
+                        }
+                    }
+
                     break;
                 default:
                     ConsoleWriteLine("UpdateData Type not found.");
@@ -661,6 +678,9 @@ namespace unlightvbe_kai_console
                         }
                     }
                     break;
+                case ReadActionReceiveType.ChangeCharacterCancel:
+                    ConsoleWriteLine("ChangeCharacter Action Canceled.");
+                    break;
                 default:
                     ConsoleWrite("ReadActionReceiveType not found.");
                     break;
@@ -699,13 +719,6 @@ namespace unlightvbe_kai_console
                     PlayCards.Clear();
                     OpponentPlayCardCount = 0;
 
-                    break;
-                case UpdateDataMultiType.DiceTrue:
-                    ConsoleWriteLine("SelfDiceTrue=" + data.Self.ToString());
-                    ConsoleWriteLine("OpponentDiceTrue=" + data.Opponent.ToString());
-
-                    DiceTrueNum[(int)UserPlayerRelativeType.Self] = data.Self;
-                    DiceTrueNum[(int)UserPlayerRelativeType.Opponent] = data.Opponent;
                     break;
                 default:
                     ConsoleWrite("UpdateDataMultiType not found.");
@@ -763,22 +776,32 @@ namespace unlightvbe_kai_console
                         tmpnum++;
                         continue;
                     }
-                    ConsoleWriteLine("Self[{0}] VBEID:{1} Name:{2}({3}/{4}/{5})", tmpnum++, characterdata.Character.VBEID,
-                        characterdata.Character.Name, characterdata.CurrentHP, characterdata.Character.ATK, characterdata.Character.DEF);
+                    ConsoleWriteLine("Self[{0}] VBEID:{1} Name:{2}({{{3}/{4}}}/{5}/{6})", tmpnum++, characterdata.Character.VBEID,
+                        characterdata.Character.Name, characterdata.CurrentHP, characterdata.Character.HP, characterdata.Character.ATK, characterdata.Character.DEF);
                 }
                 while (string.IsNullOrEmpty(tmpstr))
                 {
-                    ConsoleWrite("Type new go on stage character VBEID:");
+                    ConsoleWrite("Type new go on stage character VBEID (or type \"cancel\"):");
                     tmpstr = Console.ReadLine();
                 }
 
-                if (PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas.Any(x => x.Character.VBEID == tmpstr))
+                if (tmpstr.Equals("cancel", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    changeCharacterActionModel = new()
+                    {
+                        NewCharacterVBEID = tmpstr,
+                        IsChange = false
+                    };
+                    break;
+                }
+                else if (PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas.Any(x => x.Character.VBEID == tmpstr))
                 {
                     if (tmpstr != PlayerDatas[(int)UserPlayerRelativeType.Self].CharacterDatas[0].Character.VBEID)
                     {
                         changeCharacterActionModel = new()
                         {
                             NewCharacterVBEID = tmpstr,
+                            IsChange = true
                         };
                         break;
                     }
@@ -786,6 +809,10 @@ namespace unlightvbe_kai_console
                     {
                         ConsoleWriteLine("Character on stage cannot be assigned.");
                     }
+                }
+                else
+                {
+                    ConsoleWriteLine("Character can not be found. Please try again.");
                 }
             }
 
@@ -912,6 +939,18 @@ namespace unlightvbe_kai_console
                     characterData.BuffDatas.Remove(tmpbuffData);
                 }
             }
+        }
+
+        public void ShowDice(ShowDiceModel data)
+        {
+            ConsoleWriteLine("Test_ShowDice");
+
+            ConsoleWriteLine("SelfDiceTotal={0}", data.DiceTotal[(int)UserPlayerRelativeType.Self].ToString());
+            ConsoleWriteLine("OpponentDiceTotal={0}", data.DiceTotal[(int)UserPlayerRelativeType.Opponent].ToString());
+            ConsoleWriteLine("SelfDiceType={0}", data.DiceType[(int)UserPlayerRelativeType.Self].ToString());
+            ConsoleWriteLine("OpponentDiceType={0}", data.DiceType[(int)UserPlayerRelativeType.Opponent].ToString());
+            ConsoleWriteLine("SelfDiceTrue={0}", data.DiceTrue[(int)UserPlayerRelativeType.Self].ToString());
+            ConsoleWriteLine("OpponentDiceTrue={0}", data.DiceTrue[(int)UserPlayerRelativeType.Opponent].ToString());
         }
     }
 }

@@ -206,7 +206,7 @@ namespace unlightvbe_kai_core
         /// ※(47)
         /// </remarks>
         /// <param name="distanceType"></param>
-        public void BattleMoveControl(PlayerDistanceType distanceType)
+        public void BattleMoveControl(CommandPlayerDistanceType distanceType)
         {
             skillCommandModels.Add(new(SkillCommandType.BattleMoveControl, ((int)distanceType).ToString()));
         }

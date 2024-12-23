@@ -266,6 +266,7 @@ namespace unlightvbe_kai_core
         private int GetPlayerDiceTotalNumber(UserPlayerType player, PhaseType phase, PlayerDistanceType distance)
         {
             var result = 0;
+            var personAbilityNum = 0;
             var cardtotal = GetCardTotalNumber(player, ActionCardLocation.Play);
             int tmptotalnum;
 
@@ -277,7 +278,7 @@ namespace unlightvbe_kai_core
                     if (cardtotal.TryGetValue(ATKcardType, out tmptotalnum) && tmptotalnum > 0)
                     {
                         result += tmptotalnum;
-                        result += PlayerDatas[(int)player].CurrentCharacter.Character.ATK;
+                        personAbilityNum += PlayerDatas[(int)player].CurrentCharacter.Character.ATK;
                     }
 
                     break;
@@ -287,39 +288,44 @@ namespace unlightvbe_kai_core
                         result += tmptotalnum;
                     }
 
-                    result += PlayerDatas[(int)player].CurrentCharacter.Character.DEF;
+                    personAbilityNum += PlayerDatas[(int)player].CurrentCharacter.Character.DEF;
 
                     break;
             }
 
             #region 執行指令-攻擊/防禦階段角色白值能力對骰數變化量控制(EventPersonAbilityDiceChange)
-            PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.RecordValue = false;
-
-            foreach (var userPlayerRelativeType in System.Enum.GetValues<UserPlayerRelativeType>())
+            if ((phase == PhaseType.Attack && result > 0) || phase == PhaseType.Defense)
             {
-                foreach (var skillType in System.Enum.GetValues<SkillType>())
-                {
-                    foreach (var record in PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.MainProperty[userPlayerRelativeType][skillType])
-                    {
-                        if (PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.RecordValue &&
-                            record.Type != NumberChangeRecordThreeVersionType.Assign)
-                            continue;
+                PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.RecordValue = false;
 
-                        switch (record.Type)
+                foreach (var userPlayerRelativeType in System.Enum.GetValues<UserPlayerRelativeType>())
+                {
+                    foreach (var skillType in System.Enum.GetValues<SkillType>())
+                    {
+                        foreach (var record in PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.MainProperty[userPlayerRelativeType][skillType])
                         {
-                            case NumberChangeRecordThreeVersionType.Addition:
-                                result += record.Value;
-                                break;
-                            case NumberChangeRecordThreeVersionType.Subtraction:
-                                result -= record.Value;
-                                break;
-                            case NumberChangeRecordThreeVersionType.Assign:
-                                PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.RecordValue = true;
-                                result = record.Value;
-                                break;
+                            if (PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.RecordValue &&
+                                record.Type != NumberChangeRecordThreeVersionType.Assign)
+                                continue;
+
+                            switch (record.Type)
+                            {
+                                case NumberChangeRecordThreeVersionType.Addition:
+                                    personAbilityNum += record.Value;
+                                    break;
+                                case NumberChangeRecordThreeVersionType.Subtraction:
+                                    personAbilityNum -= record.Value;
+                                    break;
+                                case NumberChangeRecordThreeVersionType.Assign:
+                                    PlayerDatas[(int)player].SC_EventPersonAbilityDiceChangeRecord.RecordValue = true;
+                                    personAbilityNum = record.Value;
+                                    break;
+                            }
                         }
                     }
                 }
+
+                result += personAbilityNum;
             }
             #endregion
 
@@ -636,17 +642,23 @@ namespace unlightvbe_kai_core
             m_playerDistance.RecordValue = false;
             if (isCallEvent)
             {
-                SkillAdapter.StageStart(47, triggerPlayer == CommandPlayerType.System ? AttackPhaseFirst : triggerPlayer.ToUserPlayerType()!.Value, true, true, new string[]
-                {
-                    ((int)PlayerDistance).ToString(),
-                    ((int)newDistance).ToString(),
+                SkillAdapter.StageStart(47, triggerPlayer == CommandPlayerType.System ? AttackPhaseFirst : triggerPlayer.ToUserPlayerType()!.Value, true, true,
+                [
+                    ((int)PlayerDistance.ToCommandPlayerDistanceType()).ToString(),
+                    ((int)newDistance.ToCommandPlayerDistanceType()).ToString(),
                     ((int)triggerPlayer).ToString(),
-                });
+                ]);
             }
 
             if (!m_playerDistance.RecordValue)
             {
                 m_playerDistance.MainProperty = newDistance;
+
+                MultiUIAdapter.UpdateData_All(new()
+                {
+                    Type = UpdateDataType.PlayerDistanceType,
+                    Value = (int)PlayerDistance.ToCommandPlayerDistanceType()
+                });
             }
         }
 

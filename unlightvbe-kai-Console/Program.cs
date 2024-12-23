@@ -14,9 +14,8 @@ namespace unlightvbe_kai_console
             //return;
 
             //Sample Data
-            SampleData data = new();
-            var player1 = data.GetPlayer(1);
-            var player2 = data.GetPlayer(2);
+            var player1 = new SampleData().GetPlayer(1);
+            var player2 = new SampleData().GetPlayer(2);
 
             var playerModel_p1 = GetPlayerModel(player1);
             var playerModel_p2 = GetPlayerModel(player2);

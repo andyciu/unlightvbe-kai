@@ -21,5 +21,6 @@ namespace unlightvbe_kai_core.Interface
         public void BuffDataSet(BuffDataSetModel data);
         public void BuffDataUpdate(BuffDataUpdateModel data);
         public void BuffDataRemove(BuffDataRemoveModel data);
+        public void ShowDice(ShowDiceModel data);
     }
 }
