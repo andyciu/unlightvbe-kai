@@ -405,5 +405,51 @@ namespace unlightvbe_kai_core
         {
             skillCommandModels.Add(new(SkillCommandType.EventRemoveBuffActionOff));
         }
+
+        /// <summary>
+        /// 人物角色移除異常狀態(全部)
+        /// </summary>
+        /// <remarks>
+        /// [Normal/Event]{!Buff}<br/>
+        /// ※(73[異常狀態消滅時]/77*[人物角色附加狀態解除時])
+        /// </remarks>
+        /// <param name="player">目標玩家方</param>
+        /// <param name="characterNum">目標方角色順序(台上1>台下2/3)</param>
+        public void PersonRemoveBuffAll(CommandPlayerRelativeTwoVersionType player, int characterNum)
+        {
+            skillCommandModels.Add(new(SkillCommandType.PersonRemoveBuffAll, ((int)player).ToString(), characterNum.ToString()));
+        }
+
+        /// <summary>
+        /// 人物角色移除異常狀態(指定)
+        /// </summary>
+        /// <remarks>
+        /// [Normal/Event]{!Buff}<br/>
+        /// ※(73[異常狀態消滅時]/77*[人物角色附加狀態解除時])
+        /// </remarks>
+        /// <param name="player">目標玩家方</param>
+        /// <param name="characterNum">目標方角色順序(台上1>台下2/3)</param>
+        /// <param name="buffIdentifier">異常狀態之技能唯一識別碼</param>
+        public void PersonRemoveBuffSelect(CommandPlayerRelativeTwoVersionType player, int characterNum, string buffIdentifier)
+        {
+            skillCommandModels.Add(new(SkillCommandType.PersonRemoveBuffSelect, ((int)player).ToString(), characterNum.ToString(), buffIdentifier));
+        }
+
+        /// <summary>
+        /// 人物角色異常狀態變更回合數
+        /// </summary>
+        /// <remarks>
+        /// [Normal/Event]{!Buff}<br/>
+        /// ※(73[異常狀態消滅時]/77*[人物角色附加狀態解除時])
+        /// </remarks>
+        /// <param name="player">目標玩家方</param>
+        /// <param name="characterNum">目標方角色順序(台上1>台下2/3)</param>
+        /// <param name="buffIdentifier">異常狀態之技能唯一識別碼</param>
+        /// <param name="changeType">控制種類</param>
+        /// <param name="changeValue">數值</param>
+        public void PersonBuffTurnChange(CommandPlayerRelativeTwoVersionType player, int characterNum, string buffIdentifier, NumberChangeRecordThreeVersionType changeType, int changeValue)
+        {
+            skillCommandModels.Add(new(SkillCommandType.PersonBuffTurnChange, ((int)player).ToString(), characterNum.ToString(), buffIdentifier, ((int)changeType).ToString(), changeValue.ToString()));
+        }
     }
 }

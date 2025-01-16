@@ -37,5 +37,8 @@ namespace unlightvbe_kai_core.Interface
         public void BuffTurnEnd();
         public void BuffEnd();
         public void EventRemoveBuffActionOff();
+        public void PersonRemoveBuffAll(CommandPlayerRelativeTwoVersionType player, int characterNum);
+        public void PersonRemoveBuffSelect(CommandPlayerRelativeTwoVersionType player, int characterNum, string buffIdentifier);
+        public void PersonBuffTurnChange(CommandPlayerRelativeTwoVersionType player, int characterNum, string buffIdentifier, NumberChangeRecordThreeVersionType changeType, int changeValue);
     }
 }

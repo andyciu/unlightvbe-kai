@@ -145,8 +145,17 @@
         /// 異常狀態宣告結束
         /// </summary>
         BuffEnd,
+        /// <summary>
+        /// 人物角色移除異常狀態(全部)
+        /// </summary>
         PersonRemoveBuffAll,
+        /// <summary>
+        /// 人物角色移除異常狀態(指定)
+        /// </summary>
         PersonRemoveBuffSelect,
+        /// <summary>
+        /// 人物角色異常狀態變更回合數
+        /// </summary>
         PersonBuffTurnChange,
         /// <summary>
         /// 原應執行之異常狀態消除無效化

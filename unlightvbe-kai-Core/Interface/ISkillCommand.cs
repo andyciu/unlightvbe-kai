@@ -35,5 +35,8 @@ namespace unlightvbe_kai_core.Interface
         public void BuffTurnEnd(SkillCommandDataModel data);
         public void BuffEnd(SkillCommandDataModel data);
         public void EventRemoveBuffActionOff(SkillCommandDataModel data);
+        public void PersonRemoveBuffAll(SkillCommandDataModel data);
+        public void PersonRemoveBuffSelect(SkillCommandDataModel data);
+        public void PersonBuffTurnChange(SkillCommandDataModel data);
     }
 }

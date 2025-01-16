@@ -752,7 +752,7 @@ namespace unlightvbe_kai_core
             public void BuffTurnEnd(SkillCommandDataModel data)
             {
                 if (data.SkillType != SkillType.Buff || (data.StageType != SkillStageType.Normal && data.StageType != SkillStageType.Event) ||
-                    (data.StageNum == 72 || data.StageNum == 73))
+                    data.StageNum == 72 || data.StageNum == 73)
                 { CommandExportException(); return; }
 
                 var buffData = playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex]
@@ -789,7 +789,7 @@ namespace unlightvbe_kai_core
             public void BuffEnd(SkillCommandDataModel data)
             {
                 if (data.SkillType != SkillType.Buff || (data.StageType != SkillStageType.Normal && data.StageType != SkillStageType.Event) ||
-                    (data.StageNum == 72 || data.StageNum == 73))
+                    data.StageNum == 72 || data.StageNum == 73)
                 { CommandExportException(); return; }
 
                 var buffData = playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex]
@@ -830,6 +830,182 @@ namespace unlightvbe_kai_core
                 else
                 {
                     CommandExportException(); //是否為主動觸發應於各狀態內判斷
+                }
+            }
+
+            /// <summary>
+            /// 人物角色移除異常狀態(全部)
+            /// </summary>
+            /// <param name="data"></param>
+            public void PersonRemoveBuffAll(SkillCommandDataModel data)
+            {
+                if (data.Message == null || data.Message.Length != 2 || data.SkillType == SkillType.Buff ||
+                    (data.StageType != SkillStageType.Normal && data.StageType != SkillStageType.Event))
+                { CommandExportException(); return; }
+
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
+
+                int characterNum = Convert.ToInt32(data.Message[1]);
+                if (characterNum <= 0 || characterNum > playerDatas[(int)setPlayer].CharacterDatas.Count)
+                { CommandExportException(); return; }
+
+                var isRemove = false;
+
+                var buffDatas = playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].BuffDatas.ToList();
+                foreach (var buffData in buffDatas)
+                {
+                    EventRemoveBuffActionRecord.Add(SkillStageCallCount + 1, new());
+                    //執行階段(73)-異常狀態消滅時
+                    battleSystem.SkillAdapter.StageStartSkillOnly_Buff(73, setPlayer, characterNum - 1, buffData.Buff.Identifier,
+                        [
+                            ((int)StageMessage73_RemoveType.Passive).ToString()
+                        ]);
+
+                    var tmpRecord = EventRemoveBuffActionRecord[SkillStageCallCount + 1];
+                    EventRemoveBuffActionRecord.Remove(SkillStageCallCount + 1);
+
+                    if (!tmpRecord)
+                    {
+                        playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].BuffDatas.Remove(buffData);
+                        battleSystem.MultiUIAdapter.BuffDataRemove(setPlayer, playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].Character.VBEID, buffData.Buff.Identifier);
+                        isRemove = true;
+                    }
+                }
+
+                if (isRemove)
+                {
+                    //執行階段(77)-人物角色附加狀態解除時
+                    battleSystem.SkillAdapter.StageStart(77, setPlayer, true, true,
+                    [
+                        ((int)setPlayer).ToString(),
+                        ((int)SkillType.Buff).ToString(),
+                        string.Empty
+                    ]);
+                }
+            }
+
+            /// <summary>
+            /// 人物角色移除異常狀態(指定)
+            /// </summary>
+            /// <param name="data"></param>
+            public void PersonRemoveBuffSelect(SkillCommandDataModel data)
+            {
+                if (data.Message == null || data.Message.Length != 3 || data.SkillType == SkillType.Buff ||
+                    (data.StageType != SkillStageType.Normal && data.StageType != SkillStageType.Event))
+                { CommandExportException(); return; }
+
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
+
+                int characterNum = Convert.ToInt32(data.Message[1]);
+                if (characterNum <= 0 || characterNum > playerDatas[(int)setPlayer].CharacterDatas.Count)
+                { CommandExportException(); return; }
+
+                var buffDataQuery = playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex]
+                    .BuffDatas.Where(x => x.Buff.Identifier == data.Message[2]);
+
+                if (!buffDataQuery.Any())
+                { CommandExportException(); return; }
+
+                var buffData = buffDataQuery.First();
+                var isRemove = false;
+
+                EventRemoveBuffActionRecord.Add(SkillStageCallCount + 1, new());
+                //執行階段(73)-異常狀態消滅時
+                battleSystem.SkillAdapter.StageStartSkillOnly_Buff(73, setPlayer, characterNum - 1, buffData.Buff.Identifier,
+                    [
+                        ((int)StageMessage73_RemoveType.Passive).ToString()
+                    ]);
+
+                var tmpRecord = EventRemoveBuffActionRecord[SkillStageCallCount + 1];
+                EventRemoveBuffActionRecord.Remove(SkillStageCallCount + 1);
+
+                if (!tmpRecord)
+                {
+                    playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].BuffDatas.Remove(buffData);
+                    battleSystem.MultiUIAdapter.BuffDataRemove(setPlayer, playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].Character.VBEID, buffData.Buff.Identifier);
+                    isRemove = true;
+                }
+
+                if (isRemove)
+                {
+                    //執行階段(77)-人物角色附加狀態解除時
+                    battleSystem.SkillAdapter.StageStart(77, setPlayer, true, true,
+                    [
+                        ((int)setPlayer).ToString(),
+                        ((int)SkillType.Buff).ToString(),
+                        buffData.Buff.Identifier
+                    ]);
+                }
+            }
+
+            /// <summary>
+            /// 人物角色異常狀態變更回合數
+            /// </summary>
+            /// <param name="data"></param>
+            public void PersonBuffTurnChange(SkillCommandDataModel data)
+            {
+                if (data.Message == null || data.Message.Length != 5 || data.SkillType == SkillType.Buff ||
+                    (data.StageType != SkillStageType.Normal && data.StageType != SkillStageType.Event))
+                { CommandExportException(); return; }
+
+                var playerType = (CommandPlayerRelativeTwoVersionType)Convert.ToInt32(data.Message[0]);
+                var setPlayer = playerType == CommandPlayerRelativeTwoVersionType.Self ? data.Player : data.Player.GetOppenentPlayer();
+
+                int characterNum = Convert.ToInt32(data.Message[1]);
+                if (characterNum <= 0 || characterNum > playerDatas[(int)setPlayer].CharacterDatas.Count)
+                { CommandExportException(); return; }
+
+                var buffDataQuery = playerDatas[(int)data.Player].CharacterDatas[data.CharacterBattleIndex]
+                    .BuffDatas.Where(x => x.Buff.Identifier == data.Message[2]);
+
+                if (!buffDataQuery.Any())
+                { CommandExportException(); return; }
+
+                var buffData = buffDataQuery.First();
+                var changeType = (NumberChangeRecordThreeVersionType)Convert.ToInt32(data.Message[3]);
+                var changeValue = Convert.ToInt32(data.Message[4]);
+
+                switch (changeType)
+                {
+                    case NumberChangeRecordThreeVersionType.Addition:
+                        buffData.Total += changeValue;
+                        break;
+                    case NumberChangeRecordThreeVersionType.Subtraction:
+                        buffData.Total -= changeValue;
+                        break;
+                    case NumberChangeRecordThreeVersionType.Assign:
+                        buffData.Total = changeValue;
+                        break;
+                }
+
+                if (buffData.Total <= 0)
+                {
+                    //執行階段(73)-異常狀態消滅時
+                    battleSystem.SkillAdapter.StageStartSkillOnly_Buff(73, setPlayer, characterNum - 1, buffData.Buff.Identifier,
+                        [
+                            ((int)StageMessage73_RemoveType.Active).ToString()
+                        ]);
+                    playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].BuffDatas.Remove(buffData);
+                    battleSystem.MultiUIAdapter.BuffDataRemove(setPlayer, playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].Character.VBEID, buffData.Buff.Identifier);
+                    //執行階段(77)-人物角色附加狀態解除時
+                    battleSystem.SkillAdapter.StageStart(77, setPlayer, true, true,
+                    [
+                        ((int)setPlayer).ToString(),
+                        ((int)SkillType.Buff).ToString(),
+                        buffData.Buff.Identifier
+                    ]);
+                }
+                else
+                {
+                    battleSystem.MultiUIAdapter.BuffDataSet(setPlayer, playerDatas[(int)setPlayer].CharacterDatas[characterNum - 1].Character.VBEID,
+                        new()
+                        {
+                            Identifier = buffData.Buff.Identifier,
+                            Value = buffData.Value,
+                            Total = buffData.Total,
+                        });
                 }
             }
         }

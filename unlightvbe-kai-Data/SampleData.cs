@@ -12,7 +12,6 @@ namespace unlightvbe_kai_Data
 {
     public class SampleData
     {
-        private List<Player> Players { get; set; } = [];
         private static readonly Random Rnd = new();
 
         public class SampleCharacter(int num)
@@ -61,7 +60,7 @@ namespace unlightvbe_kai_Data
                             CommandPlayerDistanceType.Long,
                         ],
                 Phase = PhaseType.Attack,
-                StageNumber = [42, 45, 10, 13, 47, 62, 20],
+                StageNumber = [42, 45, 10, 13, 47, 61, 62, 20],
                 Cards = [new()
                 {
                     Scope = SkillCardConditionScopeType.Above,
@@ -150,6 +149,10 @@ namespace unlightvbe_kai_Data
                             commandFormater.EventMoveActionOff();
                         }
                         break;
+                    case 61:
+                        commandFormater.PersonBuffTurnChange(CommandPlayerRelativeTwoVersionType.Self, 1, "BUFFN00101", NumberChangeRecordThreeVersionType.Addition, 9);
+                        commandFormater.PersonRemoveBuffSelect(CommandPlayerRelativeTwoVersionType.Opponent, 1, "BUFFN00201");
+                        break;
                     case 62:
                         var messageModel62 = (StageMessageModel_62)StageMessageModelFactory.GetModel<StageMessageModel_62>(args.StageMessage)!;
                         this.tmpActiveSkill2_DiceTotalTrue += messageModel62.DiceTrueTotal;
@@ -165,41 +168,6 @@ namespace unlightvbe_kai_Data
 
                 return commandFormater.Output();
             }
-        }
-
-        public SampleData()
-        {
-            Players.Add(new()
-            {
-                Name = "AAA",
-                PlayerId = 1,
-                Deck = new()
-                {
-                    Id = 1,
-                    Name = "D1",
-                    Deck_Subs = Enumerable.Range(1, 3).Select(i => new Deck_Sub
-                    {
-                        Character = new SampleCharacter(i).GetCharacter(),
-                        EventCards = GetCardList_Event()
-                    }).ToList()
-                }
-            });
-
-            Players.Add(new()
-            {
-                Name = "BBB",
-                PlayerId = 2,
-                Deck = new()
-                {
-                    Id = 2,
-                    Name = "D2",
-                    Deck_Subs = Enumerable.Range(4, 3).Select(i => new Deck_Sub
-                    {
-                        Character = new SampleCharacter(i).GetCharacter(),
-                        EventCards = GetCardList_Event()
-                    }).ToList()
-                }
-            });
         }
 
         public static List<ActionCard> GetCardList_Deck()
@@ -280,9 +248,42 @@ namespace unlightvbe_kai_Data
             return cards;
         }
 
-        public Player GetPlayer(int id)
+        public static Player GetPlayer(int id)
         {
-            return Players.Find(x => x.PlayerId == id) ?? Players[0];
+            return id switch
+            {
+                1 => new()
+                {
+                    Name = "AAA",
+                    PlayerId = 1,
+                    Deck = new()
+                    {
+                        Id = 1,
+                        Name = "D1",
+                        Deck_Subs = Enumerable.Range(1, 3).Select(i => new Deck_Sub
+                        {
+                            Character = new SampleCharacter(i).GetCharacter(),
+                            EventCards = GetCardList_Event()
+                        }).ToList()
+                    }
+                },
+                2 => new()
+                {
+                    Name = "BBB",
+                    PlayerId = 2,
+                    Deck = new()
+                    {
+                        Id = 2,
+                        Name = "D2",
+                        Deck_Subs = Enumerable.Range(4, 3).Select(i => new Deck_Sub
+                        {
+                            Character = new SampleCharacter(i).GetCharacter(),
+                            EventCards = GetCardList_Event()
+                        }).ToList()
+                    }
+                },
+                _ => throw new NotImplementedException()
+            };
         }
 
         public static List<BuffSkillModel> GetBuffList()
