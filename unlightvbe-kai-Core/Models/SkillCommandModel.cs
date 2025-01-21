@@ -1,4 +1,4 @@
-﻿using unlightvbe_kai_core.Enum;
+﻿using unlightvbe_kai_core.Enum.SkillCommand;
 
 namespace unlightvbe_kai_core.Models
 {

@@ -1,4 +1,6 @@
-﻿namespace unlightvbe_kai_core.Enum
+﻿using unlightvbe_kai_core.Enum.SkillArgs;
+
+namespace unlightvbe_kai_core.Enum
 {
     /// <summary>
     /// 卡牌集合列舉(絕對)

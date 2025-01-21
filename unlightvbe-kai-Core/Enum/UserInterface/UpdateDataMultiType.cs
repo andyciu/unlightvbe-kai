@@ -1,4 +1,4 @@
-﻿namespace unlightvbe_kai_core.Enum
+﻿namespace unlightvbe_kai_core.Enum.UserInterface
 {
     public enum UpdateDataMultiType
     {

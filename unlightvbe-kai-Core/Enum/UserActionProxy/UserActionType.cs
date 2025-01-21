@@ -1,4 +1,4 @@
-﻿namespace unlightvbe_kai_core.Enum
+﻿namespace unlightvbe_kai_core.Enum.UserActionProxy
 {
     /// <summary>
     /// 人物角色行動列舉

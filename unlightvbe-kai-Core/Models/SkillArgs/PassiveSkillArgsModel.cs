@@ -1,4 +1,4 @@
-﻿using unlightvbe_kai_core.Enum;
+﻿using unlightvbe_kai_core.Enum.SkillArgs;
 using unlightvbe_kai_core.Models.UserInterface;
 
 namespace unlightvbe_kai_core.Models.SkillArgs

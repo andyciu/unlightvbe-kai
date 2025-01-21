@@ -1,4 +1,4 @@
-﻿namespace unlightvbe_kai_core.Enum
+﻿namespace unlightvbe_kai_core.Enum.SkillArgs
 {
     /// <summary>
     /// 卡片條件範圍列舉

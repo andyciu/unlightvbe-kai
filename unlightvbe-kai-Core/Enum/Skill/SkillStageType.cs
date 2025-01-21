@@ -1,4 +1,4 @@
-﻿namespace unlightvbe_kai_core.Enum
+﻿namespace unlightvbe_kai_core.Enum.Skill
 {
     /// <summary>
     /// 執行階段型態列舉

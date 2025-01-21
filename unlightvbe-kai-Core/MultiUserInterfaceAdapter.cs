@@ -1,4 +1,6 @@
 ﻿using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Enum.UserActionProxy;
+using unlightvbe_kai_core.Enum.UserInterface;
 using unlightvbe_kai_core.Interface;
 using unlightvbe_kai_core.Models;
 using unlightvbe_kai_core.Models.UserInterface;

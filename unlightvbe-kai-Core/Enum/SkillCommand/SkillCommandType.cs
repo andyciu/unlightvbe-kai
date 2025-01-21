@@ -1,4 +1,4 @@
-﻿namespace unlightvbe_kai_core.Enum
+﻿namespace unlightvbe_kai_core.Enum.SkillCommand
 {
     /// <summary>
     /// 執行指令列舉

@@ -1,4 +1,5 @@
 ﻿using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Enum.UserActionProxy;
 
 namespace unlightvbe_kai_core.Interface
 {

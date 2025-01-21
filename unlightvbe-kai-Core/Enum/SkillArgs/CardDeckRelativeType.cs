@@ -1,4 +1,4 @@
-﻿namespace unlightvbe_kai_core.Enum
+﻿namespace unlightvbe_kai_core.Enum.SkillArgs
 {
     /// <summary>
     /// 卡牌集合列舉(相對)

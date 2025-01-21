@@ -1,4 +1,5 @@
 ﻿using unlightvbe_kai_core.Enum;
+using unlightvbe_kai_core.Enum.Skill;
 using unlightvbe_kai_core.Enum.SkillCommand;
 using unlightvbe_kai_core.Enum.StageMessage;
 using unlightvbe_kai_core.Models.StageMessage;

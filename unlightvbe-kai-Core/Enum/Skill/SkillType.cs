@@ -1,6 +1,6 @@
 ﻿using unlightvbe_kai_core.Enum.SkillCommand;
 
-namespace unlightvbe_kai_core.Enum
+namespace unlightvbe_kai_core.Enum.Skill
 {
     /// <summary>
     /// 技能體系類型

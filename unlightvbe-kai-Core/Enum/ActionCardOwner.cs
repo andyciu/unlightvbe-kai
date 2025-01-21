@@ -1,4 +1,6 @@
-﻿namespace unlightvbe_kai_core.Enum
+﻿using unlightvbe_kai_core.Enum.UserInterface;
+
+namespace unlightvbe_kai_core.Enum
 {
     public enum ActionCardOwner
     {
